@@ -1,91 +1,75 @@
-# Procurement tender evaluation API
+# TenderRank procurement evaluation system
 
-Production-oriented Flask backend for ingesting tender documents (PDF, DOCX, XLSX), extracting basic structured fields, persisting bids in PostgreSQL, applying transparent rule-based scoring, and ranking suppliers. The design keeps document parsing and scoring behind service layers so ML components can be swapped in later without changing the HTTP contract.
+TenderRank is a Flask + React tender ranking system. Admin users create tenders, suppliers upload proposal PDFs, the backend extracts document requirements, scores compliance, and ranks proposals by score.
 
-## Requirements
+## Project layout
 
-- Python 3.11+ (3.12 is also supported on the versions pinned in `requirements.txt`)
-- PostgreSQL 14+ (or compatible)
-- Optional: [Tesseract](https://github.com/tesseract-ocr/tesseract) if you later enable OCR paths in `extraction_service.py`
+- `backend/` - Flask API, SQLAlchemy models, PDF extraction, scoring, ranking.
+- `frontend/` - React/Vite UI.
+- `run_backend.py` - backend entry point.
+- `migrations/` - Alembic migration for the current schema.
 
----
+## Quick start on Windows PowerShell
 
-
-### 1. Create role and database
-
-Enter Postgres in window terminal with this command below
-
-psql -U postgres
-
-
-```sql
-CREATE USER procurement WITH PASSWORD 'your_secure_password';
-CREATE DATABASE procurement OWNER procurement;
-```
-
-```sql
-CREATE DATABASE procurement;
-```
-
-### 2. Clone the repo and open a terminal in the project root and
+### 1. Backend
 
 ```powershell
-cd path\to\ai-system
-```
-
-### 3. Environment file
-
-```powershell
-copy .env.example .env
-```
-
-Edit **`.env`**:
-
-| Variable | What to set |
-|----------|-------------|
-| `DATABASE_URL` | Must match PostgreSQL. Prefer **`127.0.0.1`** on Windows (avoids some `localhost` → IPv6 issues). Example: `postgresql://procurement:your_secure_password@127.0.0.1:5432/procurement` — the app normalizes this to use `psycopg2`. |
-
-
-
-
-**Sanity check:** from a terminal, if `psql` is on your `PATH`:
-
-```text
-psql -h 127.0.0.1 -U procurement -d procurement
-```
-
-If that fails, fix the role password or `DATABASE_URL` before continuing.
-
-### 4. Python virtual environment and dependencies
-
-```powershell
-python -m venv .venv
+cd C:\Users\pc\ai-system
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+$env:FLASK_APP = "run_backend:app"
+flask init-db
+flask seed-db
+python run_backend.py
 ```
 
-If `Activate.ps1` is blocked, run once in an elevated PowerShell (or for the current user only):
+The API runs at `http://127.0.0.1:5000`.
 
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+Demo users:
+
+- Admin: `admin@tender.com` / `adminpass`
+- Supplier: `supplier@tender.com` / `supplierpass`
+
+By default the app uses SQLite at `instance/procurement.sqlite3`. To use PostgreSQL, set `DATABASE_URL` in `.env`, for example:
+
+```text
+DATABASE_URL=postgresql://procurement:admin1212@127.0.0.1:5432/procurement
 ```
 
-### 5. Apply database schema
+Then run:
 
 ```powershell
-$env:FLASK_APP = "run:app"
+$env:FLASK_APP = "run_backend:app"
 flask db upgrade
+flask seed-db
 ```
 
-### 6. Seed demo data (recommended)
+### 2. Frontend
+
+Open a second PowerShell window:
 
 ```powershell
-flask seed-demo
+cd C:\Users\pc\ai-system\frontend
+npm install
+npm run dev
 ```
-### 7. Start the API
+
+The UI runs at the URL printed by Vite, usually `http://localhost:5173`.
+
+## Verification
+
+Backend sanity checks:
 
 ```powershell
-python run.py
+.\.venv\Scripts\python.exe -m compileall backend
+$env:FLASK_APP = "run_backend:app"
+flask init-db
+flask seed-db
 ```
 
-**Base URL for HTTP clients:** `http://127.0.0.1:5000` (override with env var **`PORT`**).
+Frontend sanity check:
+
+```powershell
+cd frontend
+npm run build
+```

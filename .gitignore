@@ -21,7 +21,6 @@ parts/
 sdist/
 var/
 wheels/
-migrations/
 share/python-wheels/
 *.egg-info/
 .installed.cfg
@@ -55,8 +54,18 @@ coverage.xml
 instance/
 .webassets-cache
 
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
 # Uploaded tender documents (local dev)
 uploads/
+
+# ML model weights (too large for git — share separately)
+models/
+
+# Claude Code session files
+.claude/
 
 # Logs and databases
 *.log

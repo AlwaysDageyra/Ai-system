@@ -4,6 +4,8 @@ Flask-SQLAlchemy>=3.1.0,<4.0.0
 Flask-Migrate>=4.0.0,<5.0.0
 python-dotenv>=1.0.0,<2.0.0
 Werkzeug>=3.0.0,<4.0.0
+flask-cors>=4.0.0,<5.0.0
+pyjwt>=2.8.0,<3.0.0
 
 # Database
 SQLAlchemy>=2.0.0,<3.0.0
@@ -16,6 +18,13 @@ python-docx>=1.1.0,<2.0.0
 pandas>=2.2.0,<3.0.0
 openpyxl>=3.1.0,<4.0.0
 xlrd>=2.0.1,<3.0.0
+
+# ML pipeline
+torch>=2.0.0
+transformers>=4.40.0
+sentence-transformers>=3.0.0
+scikit-learn>=1.4.0
+numpy>=1.26.0
 
 # Optional OCR stack (import guarded in code)
 pytesseract>=0.3.10,<1.0.0
