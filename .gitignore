@@ -62,7 +62,7 @@ frontend/dist/
 uploads/
 
 # ML model weights (too large for git — share separately)
-models/
+/models/
 
 # Claude Code session files
 .claude/
