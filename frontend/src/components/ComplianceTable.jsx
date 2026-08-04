@@ -2,16 +2,16 @@ import React from 'react';
 import { CheckCircle2, XCircle, MinusCircle, AlertTriangle, HelpCircle } from 'lucide-react';
 
 const VERDICT_CONFIG = {
-  YES:        { label: 'Verified',  icon: CheckCircle2, color: '#10b981', bg: '#f0fdf4', border: '#bbf7d0' },
-  PARTIAL:    { label: 'Partial',   icon: MinusCircle,  color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
-  NO:         { label: 'Missing',   icon: XCircle,      color: '#ef4444', bg: '#fef2f2', border: '#fecaca' },
-  UNVERIFIED: { label: 'Detected',  icon: CheckCircle2, color: '#0ea5e9', bg: '#f0f9ff', border: '#bae6fd' },
-  SKIPPED:    { label: null,        icon: null,         color: '#94a3b8', bg: '#f8fafc', border: '#e2e8f0' },
+  verified: { label: 'Verified', icon: CheckCircle2, color: '#10b981', bg: '#f0fdf4', border: '#bbf7d0' },
+  partial:  { label: 'Partial',  icon: MinusCircle,  color: '#d97706', bg: '#fffbeb', border: '#fde68a' },
+  missing:  { label: 'Missing',  icon: XCircle,      color: '#ef4444', bg: '#fef2f2', border: '#fecaca' },
 };
 
 function getVerdict(req) {
-  const v = req.llm_verdict || (req.detected ? 'UNVERIFIED' : 'NO');
-  return VERDICT_CONFIG[v] || VERDICT_CONFIG.NO;
+  const c = req.confidence ?? 0;
+  if (c >= 0.50) return VERDICT_CONFIG.verified;
+  if (c >= 0.35) return VERDICT_CONFIG.partial;
+  return VERDICT_CONFIG.missing;
 }
 
 function ConfidenceBar({ value = 0 }) {
@@ -56,7 +56,7 @@ const ComplianceTable = ({ requirements = [], redFlags = [] }) => {
   const scored    = requirements.filter(r => !r.is_mandatory);
   const totalEarned   = scored.reduce((s, r) => s + (r.points_earned   ?? 0), 0);
   const totalPossible = scored.reduce((s, r) => s + (r.points_possible ?? 0), 0);
-  const mandatoryPassed = mandatory.filter(r => r.detected && r.llm_verdict !== 'NO').length;
+  const mandatoryPassed = mandatory.filter(r => r.detected).length;
 
   return (
     <div className="space-y-4">
@@ -79,7 +79,7 @@ const ComplianceTable = ({ requirements = [], redFlags = [] }) => {
           <div className="divide-y" style={{ borderColor: '#fef2f2' }}>
             {mandatory.map((req) => {
               const label = req.display_label || req.requirement_name.replace(/_/g, ' ');
-              const passed = req.detected && req.llm_verdict !== 'NO';
+              const passed = req.detected;
               return (
                 <div key={req.id || req.requirement_name}
                   className="flex items-center justify-between px-5 py-3.5 gap-4"

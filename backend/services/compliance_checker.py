@@ -85,31 +85,87 @@ def extract_text(file_path):
 
 # ─────────────────────────────────────────────────────────────
 # TEXT SEGMENTATION
-# ─────────────────────────────────────────────────────────────
+# ---
 
 def _find_requirements_section(text):
-    """Return the part of the text starting from the first requirements-like heading."""
     lines = text.split('\n')
     for i, line in enumerate(lines):
         if any(kw in line.lower() for kw in REQUIREMENTS_SECTION_KEYWORDS):
-            return "\n".join(lines[i:])
-    return text  # fallback: use full document
+            return '\n'.join(lines[i:])
+    return text
+
+
+_NEW_ITEM = re.compile(r'^(\d+[\.)\]]\s+|[a-zA-Z][\.)\]]\s+|[-*]\s+)')
+
+def _ends_sentence(line):
+    return bool(re.search(r'[.!?;:]\s*$', line))
 
 
 def _segment(text):
-    """Split text into candidate units (min 5 words each)."""
-    raw = re.split(r'\n+|(?<=[.!?])\s+', text)
-    return [u.strip() for u in raw if u.strip() and len(u.split()) >= 5]
+    raw_lines = text.split('\n')
+    cleaned = []
+    for line in raw_lines:
+        stripped = line.strip()
+        if not stripped or stripped.isdigit() or stripped.startswith('--- PAGE'):
+            continue
+        cleaned.append(stripped)
 
+    units = []
+    current = ''
+    for line in cleaned:
+        if not current:
+            current = line
+            continue
 
-# ─────────────────────────────────────────────────────────────
+        # Rule 1: explicit continuation
+        if line[0].islower() or line.startswith(('and ', 'or ', 'including ', 'such as ', 'as well as ', 'with ')):
+            current += ' ' + line
+            continue
+
+        # Rule 2: previous line ended a sentence
+        if _ends_sentence(current):
+            units.append(current)
+            current = line
+            continue
+
+        # Rule 3: new list item
+        if _NEW_ITEM.match(line):
+            units.append(current)
+            current = line
+            continue
+
+        # Rule 4: unit already long
+        if len(current.split()) > 40:
+            units.append(current)
+            current = line
+            continue
+
+        # Rule 5: mid-sentence wrap
+        current += ' ' + line
+
+    if current:
+        units.append(current)
+
+    result = []
+    for block in units:
+        if len(block.split()) <= 60:
+            result.append(block)
+        else:
+            sents = re.split(r'(?<=[.!?])\s+(?=[A-Z])', block)
+            result.extend(sents)
+
+    return [u.strip() for u in result if u.strip() and len(u.split()) >= 3]
+
 # TENDER SIDE — RoBERTa requirement extraction
 # ─────────────────────────────────────────────────────────────
 
-def extract_requirements(roberta_model, tokenizer, text, threshold=0.5):
+def extract_requirements(roberta_model, tokenizer, text, threshold=0.87):
     """
     Classify each text unit as requirement (label 1) or not (label 0).
     Returns list of dicts: {text, confidence, is_mandatory}
+
+    Uses two-pass strategy: first strict threshold (0.87), then relaxed (0.55)
+    if the first pass yields nothing, to handle varied document formats.
     """
     import torch
 
@@ -118,7 +174,7 @@ def extract_requirements(roberta_model, tokenizer, text, threshold=0.5):
     if not units:
         return []
 
-    results = []
+    scored = []
     for unit in units:
         inputs = tokenizer(
             unit,
@@ -130,15 +186,29 @@ def extract_requirements(roberta_model, tokenizer, text, threshold=0.5):
         with torch.no_grad():
             outputs = roberta_model(**inputs)
             probs = torch.softmax(outputs.logits, dim=1).cpu().numpy()[0]
+        scored.append((unit, float(probs[1])))
 
-        prob_req = float(probs[1])
-        if prob_req >= threshold:
-            is_mandatory = any(kw in unit.lower() for kw in MANDATORY_KEYWORDS)
-            results.append({
+    # First pass: strict threshold
+    results = [
+        {
+            'text':         unit,
+            'confidence':   round(prob, 4),
+            'is_mandatory': any(kw in unit.lower() for kw in MANDATORY_KEYWORDS),
+        }
+        for unit, prob in scored if prob >= threshold
+    ]
+
+    # Second pass: relaxed threshold — only used when nothing passed the strict gate
+    if not results:
+        FALLBACK = 0.55
+        results = [
+            {
                 'text':         unit,
-                'confidence':   round(prob_req, 4),
-                'is_mandatory': is_mandatory,
-            })
+                'confidence':   round(prob, 4),
+                'is_mandatory': any(kw in unit.lower() for kw in MANDATORY_KEYWORDS),
+            }
+            for unit, prob in scored if prob >= FALLBACK
+        ]
 
     return results
 
@@ -165,12 +235,30 @@ def match_supplier(sentence_model, requirements, supplier_text):
     from sklearn.metrics.pairwise import cosine_similarity
     import numpy as np
 
-    if not requirements or not supplier_text:
+    if not requirements:
         return [], 0.0, False, []
+
+    def _all_missing(reqs):
+        """Return every requirement as Not Met when the proposal has no extractable text."""
+        items = []
+        disq = False
+        disq_r = []
+        for r in reqs:
+            req_text = r['text'] if isinstance(r, dict) else r
+            is_mand  = r.get('is_mandatory', False) if isinstance(r, dict) else False
+            if is_mand:
+                disq = True
+                disq_r.append(req_text[:100])
+            items.append({'requirement_text': req_text, 'status': 'Not Met',
+                          'similarity': 0.0, 'best_match': '', 'is_mandatory': is_mand})
+        return items, 0.0, disq, disq_r
+
+    if not supplier_text:
+        return _all_missing(requirements)
 
     supplier_sentences = _segment(supplier_text)
     if not supplier_sentences:
-        return [], 0.0, False, []
+        return _all_missing(requirements)
 
     req_texts = [r['text'] if isinstance(r, dict) else r for r in requirements]
     req_embeddings = sentence_model.encode(req_texts)

@@ -33,7 +33,6 @@ class ProposalRequirement(db.Model):
     points_earned = db.Column(db.Integer, nullable=False, default=0)
     points_possible = db.Column(db.Integer, nullable=False, default=0)
     confidence = db.Column(db.Float, nullable=False, default=1.0)
-    llm_verdict = db.Column(db.String(20), nullable=True)
 
     def to_dict(self):
         return {
@@ -46,5 +45,4 @@ class ProposalRequirement(db.Model):
             "points_earned": self.points_earned,
             "points_possible": self.points_possible,
             "confidence": self.confidence,
-            "llm_verdict": self.llm_verdict,
         }

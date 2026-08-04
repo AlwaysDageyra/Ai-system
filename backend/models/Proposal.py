@@ -31,10 +31,12 @@ class Proposal(db.Model):
             "id": self.id,
             "supplier_id": self.supplier_id,
             "tender_id": self.tender_id,
+            "tender_title": self.tender.title if self.tender else None,
             "pdf_path": self.pdf_path,
             "score": self.score,
             "status": self.status,
             "red_flags": flags,
+            "disqualified": bool(flags),
             "submitted_at": self.submitted_at.isoformat() if self.submitted_at else None,
             "requirements": [req.to_dict() for req in self.requirements]
         }

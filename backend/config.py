@@ -29,8 +29,10 @@ class Config:
     # Cap upload size (50MB)
     MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH", 50 * 1024 * 1024))
     
-    # Upload folder
-    UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", str(BASE_DIR / "uploads"))
+    # Upload folder — resolve relative paths against project root so the backend
+    # works correctly regardless of which directory Flask is launched from.
+    _raw_upload = os.environ.get("UPLOAD_FOLDER", str(ROOT_DIR / "uploads"))
+    UPLOAD_FOLDER = _raw_upload if os.path.isabs(_raw_upload) else str(ROOT_DIR / _raw_upload)
     TENDERS_UPLOAD_FOLDER = os.path.join(UPLOAD_FOLDER, "tenders")
     PROPOSALS_UPLOAD_FOLDER = os.path.join(UPLOAD_FOLDER, "proposals")
     

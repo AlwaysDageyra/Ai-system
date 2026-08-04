@@ -178,11 +178,32 @@ def change_password(current_user):
     return jsonify({"message": "Password changed successfully", "user": current_user.to_dict()}), 200
 
 
+_SUPPLIER_REQUIRED = ("company_name", "registration_number", "company_type",
+                      "country", "city", "address", "phone", "contact_person")
+_ADMIN_REQUIRED    = ("company_name", "company_type", "country",
+                      "address", "phone", "contact_person")
+
+def profile_complete(user):
+    """Return True if the user has filled in all required profile fields."""
+    if user.role == "supplier":
+        fields = _SUPPLIER_REQUIRED
+    elif user.role == "admin":
+        fields = _ADMIN_REQUIRED
+    else:
+        return True  # super_admin is never blocked
+    return all((getattr(user, f) or "").strip() for f in fields)
+
+
 @auth_bp.patch("/api/profile")
 @token_required
 def update_profile(current_user):
     data = request.get_json() or {}
-    allowed = ("name", "company_name", "address", "phone", "registration_number", "website")
+    allowed = (
+        "name", "company_name", "company_type", "registration_number",
+        "year_established", "country", "city", "address", "phone",
+        "contact_person", "business_description", "main_services",
+        "industry", "website",
+    )
     for field in allowed:
         if field in data:
             value = data[field]

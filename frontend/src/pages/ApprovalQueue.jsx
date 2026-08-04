@@ -4,6 +4,7 @@ import { apiService } from '../services/api';
 import {
   ClipboardCheck, CheckCircle2, XCircle, FileText,
   ChevronDown, ChevronUp, Clock, Building2, AlertTriangle, X,
+  MapPin, Phone, User, Hash, Calendar, Briefcase, Mail,
 } from 'lucide-react';
 
 const Toast = ({ toasts }) => (
@@ -87,6 +88,16 @@ const RejectModal = ({ isOpen, onClose, onConfirm, loading }) => {
     </div>
   );
 };
+
+const IssuerRow = ({ icon: Icon, label, value }) => (
+  <div className="flex items-start gap-2 min-w-0">
+    <Icon size={11} style={{ color: '#7c3aed', marginTop: 2, flexShrink: 0 }} />
+    <div className="min-w-0">
+      <p className="text-[9px] font-bold uppercase tracking-widest" style={{ color: '#94a3b8' }}>{label}</p>
+      <p className="text-xs font-semibold text-[#0f172a] truncate">{value}</p>
+    </div>
+  </div>
+);
 
 const ApprovalQueue = () => {
   const [queue, setQueue] = useState([]);
@@ -263,7 +274,67 @@ const ApprovalQueue = () => {
                           transition={{ duration: 0.25 }}
                           style={{ overflow: 'hidden', borderTop: '1px solid #f8fafc' }}
                         >
-                          <div className="px-5 py-4 space-y-3" style={{ background: '#fafafa' }}>
+                          <div className="px-5 py-4 space-y-4" style={{ background: '#fafafa' }}>
+
+                            {/* Issuer Organisation Card */}
+                            {item.created_by && (
+                              <div className="rounded-2xl overflow-hidden" style={{ border: '1px solid #ede9fe' }}>
+                                <div className="px-4 py-3 flex items-center gap-2"
+                                  style={{ background: 'linear-gradient(135deg,#7c3aed,#6d28d9)' }}>
+                                  <Building2 size={13} color="#fff" />
+                                  <p className="text-xs font-bold text-white tracking-wide">Issuer Organisation</p>
+                                  {item.created_by.company_type && (
+                                    <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full"
+                                      style={{ background: 'rgba(255,255,255,0.2)', color: '#fff' }}>
+                                      {item.created_by.company_type}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="p-4" style={{ background: '#fff' }}>
+                                  <p className="text-base font-extrabold text-[#0f172a] mb-3">
+                                    {item.created_by.company_name || item.created_by.name}
+                                  </p>
+                                  <div className="grid grid-cols-2 gap-x-6 gap-y-2.5">
+                                    {item.created_by.contact_person && (
+                                      <IssuerRow icon={User} label="Contact Person" value={item.created_by.contact_person} />
+                                    )}
+                                    {item.created_by.email && (
+                                      <IssuerRow icon={Mail} label="Email" value={item.created_by.email} />
+                                    )}
+                                    {item.created_by.phone && (
+                                      <IssuerRow icon={Phone} label="Phone" value={item.created_by.phone} />
+                                    )}
+                                    {item.created_by.registration_number && (
+                                      <IssuerRow icon={Hash} label="Reg. Number" value={item.created_by.registration_number} />
+                                    )}
+                                    {(item.created_by.city || item.created_by.country) && (
+                                      <IssuerRow icon={MapPin} label="Location"
+                                        value={[item.created_by.city, item.created_by.country].filter(Boolean).join(', ')} />
+                                    )}
+                                    {item.created_by.year_established && (
+                                      <IssuerRow icon={Calendar} label="Est." value={item.created_by.year_established} />
+                                    )}
+                                    {item.created_by.industry && (
+                                      <IssuerRow icon={Briefcase} label="Industry" value={item.created_by.industry} />
+                                    )}
+                                  </div>
+                                  {item.created_by.address && (
+                                    <div className="mt-2.5 pt-2.5" style={{ borderTop: '1px solid #f1f5f9' }}>
+                                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] mb-0.5">Address</p>
+                                      <p className="text-xs text-[#64748b]">{item.created_by.address}</p>
+                                    </div>
+                                  )}
+                                  {item.created_by.business_description && (
+                                    <div className="mt-2.5 pt-2.5" style={{ borderTop: '1px solid #f1f5f9' }}>
+                                      <p className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] mb-0.5">About</p>
+                                      <p className="text-xs text-[#64748b] leading-relaxed">{item.created_by.business_description}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Tender details */}
                             {item.description && (
                               <div>
                                 <p className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8] mb-1.5">Description</p>

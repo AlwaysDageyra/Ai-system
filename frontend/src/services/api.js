@@ -79,6 +79,11 @@ export const apiService = {
   getProposals: () => api.get('/api/proposals'),
   updateProposalStatus: (id, status) =>
     api.patch(`/api/proposals/${id}/status`, { status }),
+  deleteProposal: (id) => api.delete(`/api/proposals/${id}`),
+  replaceProposal: (id, formData) =>
+    api.patch(`/api/proposals/${id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
 
   // Rankings
   getRankings: (tenderId) => api.get(`/api/rankings/${tenderId}`),
@@ -87,6 +92,7 @@ export const apiService = {
   getAdminStats: () => api.get('/api/admin/stats'),
   getSupplierProfile: (userId) => api.get(`/api/admin/suppliers/${userId}`),
   submitTenderForApproval: (id) => api.patch(`/api/tenders/${id}/submit`),
+  rescoreProposals: (id) => api.post(`/api/tenders/${id}/rescore`),
 
   // Super Admin
   getSuperAdminStats: () => api.get('/api/super-admin/stats'),

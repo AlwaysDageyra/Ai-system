@@ -34,6 +34,7 @@ import ContactPage from './pages/ContactPage';
 import PublicTenders from './pages/PublicTenders';
 import PublicTenderDetail from './pages/PublicTenderDetail';
 import SupplierProfile from './pages/SupplierProfile';
+import AdminProfile from './pages/AdminProfile';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import ApprovalQueue from './pages/ApprovalQueue';
 import UserManagement from './pages/UserManagement';
@@ -133,6 +134,7 @@ function App() {
             <Route path="/rankings" element={<Rankings />} />
             <Route path="/rankings/:tenderId" element={<Rankings />} />
             <Route path="/proposal/:proposalId" element={<ProposalDetails />} />
+            <Route path="/admin/profile" element={<AdminProfile />} />
           </Route>
         </Route>
 
@@ -143,7 +145,7 @@ function App() {
             <Route path="/supplier/tenders" element={<TendersList />} />
             <Route path="/supplier/tenders/:tenderId" element={<TenderDetails />} />
             <Route path="/submit/:tenderId" element={<SupplierSubmission />} />
-            <Route path="/proposal/:proposalId" element={<ProposalDetails />} />
+            <Route path="/supplier/proposal/:proposalId" element={<ProposalDetails />} />
             <Route path="/profile" element={<SupplierProfile />} />
           </Route>
         </Route>

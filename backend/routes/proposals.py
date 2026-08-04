@@ -29,7 +29,13 @@ def _score_in_background(app, proposal_id, save_path, tender_req_dict):
             from backend.services.ai_requirement_service import AIRequirementService
 
             sentence_model = getattr(app, 'sentence_model', None)
+
+            if not os.path.exists(save_path):
+                app.logger.error(f"[BG] Proposal {proposal_id}: file not found at {save_path}")
+                return
+
             text = extract_text(save_path)
+            app.logger.info(f"[BG] Proposal {proposal_id}: extracted {len(text)} chars from {save_path}")
 
             # Build requirements list from tender_req_dict
             requirements = [
@@ -43,14 +49,16 @@ def _score_in_background(app, proposal_id, save_path, tender_req_dict):
             ]
 
             if sentence_model and requirements:
-                items, percentage, disqualified, _ = match_supplier(sentence_model, requirements, text)
+                import json as _json
+                items, percentage, disqualified, disq_reasons = match_supplier(sentence_model, requirements, text)
+                app.logger.info(f"[BG] Proposal {proposal_id}: score={percentage}% disqualified={disqualified} reqs_matched={sum(1 for i in items if i['status']=='Met')}/{len(items)}")
 
                 proposal = db.session.get(Proposal, proposal_id)
                 if not proposal:
                     return
 
-                proposal.score = 0.0 if disqualified else percentage
-                proposal.red_flags = None
+                proposal.score = percentage  # always store real score; UI shows disqualified flag
+                proposal.red_flags = _json.dumps(disq_reasons) if disqualified else None
 
                 for item, req_info in zip(items, requirements):
                     status = item['status']
@@ -65,39 +73,31 @@ def _score_in_background(app, proposal_id, save_path, tender_req_dict):
                         points_earned=pts_earned,
                         points_possible=pts_possible,
                         confidence=item['similarity'],
-                        llm_verdict=status,
                     )
                     db.session.add(p_req)
 
             else:
-                # Keyword fallback if sentence model not loaded
-                detected = set(AIRequirementService.extract_requirements(text))
-                total_score = 0
-                max_score = sum(r['points'] for r in tender_req_dict.values() if not r['is_mandatory']) or 1
-
+                # Sentence model not loaded — mark every requirement as unscored (confidence 0).
+                # This ensures the frontend can display requirements and stops polling,
+                # rather than leaving requirements=[] which causes an infinite poll loop.
                 proposal = db.session.get(Proposal, proposal_id)
                 if not proposal:
                     return
 
                 for req_name, info in tender_req_dict.items():
-                    is_det = req_name in detected
-                    pts = info['points'] if is_det else 0
-                    if not info['is_mandatory']:
-                        total_score += pts
                     p_req = ProposalRequirement(
                         proposal_id=proposal_id,
                         requirement_name=req_name,
                         display_label=info['display_label'][:250],
-                        detected=is_det,
+                        detected=False,
                         is_mandatory=info['is_mandatory'],
-                        points_earned=pts,
+                        points_earned=0,
                         points_possible=info['points'],
-                        confidence=0.9 if is_det else 0.1,
-                        llm_verdict=None,
+                        confidence=0.0,
                     )
                     db.session.add(p_req)
 
-                proposal.score = round(total_score / max_score * 100, 1)
+                proposal.score = 0.0
                 proposal.red_flags = None
 
             db.session.commit()
@@ -115,6 +115,13 @@ def submit_proposal(current_user):
     """Submit a supplier proposal (PDF or Word upload)."""
     if current_user.role != "supplier":
         return jsonify({"message": "Forbidden: Supplier role required"}), 403
+
+    from backend.routes.auth import profile_complete
+    if not profile_complete(current_user):
+        return jsonify({
+            "message": "Complete your company profile before submitting a proposal.",
+            "profile_incomplete": True,
+        }), 403
 
     tender_id = request.form.get("tender_id")
     proposal_file = request.files.get("file")
@@ -223,6 +230,74 @@ def get_proposals(current_user):
 
     return jsonify([p.to_dict() for p in proposals]), 200
 
+@proposals_bp.delete("/api/proposals/<int:proposal_id>")
+@token_required
+def delete_proposal(current_user, proposal_id):
+    """Supplier withdraws (deletes) their own proposal."""
+    proposal = Proposal.query.get(proposal_id)
+    if not proposal:
+        return jsonify({"message": "Proposal not found"}), 404
+    if current_user.role != "supplier" or proposal.supplier_id != current_user.id:
+        return jsonify({"message": "Forbidden"}), 403
+    db.session.delete(proposal)
+    db.session.commit()
+    return jsonify({"message": "Proposal withdrawn successfully"}), 200
+
+
+@proposals_bp.patch("/api/proposals/<int:proposal_id>")
+@token_required
+def update_proposal(current_user, proposal_id):
+    """Supplier replaces the document for their own proposal and re-scores it."""
+    proposal = Proposal.query.get(proposal_id)
+    if not proposal:
+        return jsonify({"message": "Proposal not found"}), 404
+    if current_user.role != "supplier" or proposal.supplier_id != current_user.id:
+        return jsonify({"message": "Forbidden"}), 403
+
+    proposal_file = request.files.get("file")
+    if not proposal_file:
+        return jsonify({"message": "A replacement document is required"}), 400
+    if not _is_allowed(proposal_file):
+        return jsonify({"message": "Only PDF or Word documents (.pdf, .docx, .doc) are accepted"}), 400
+
+    # Save new file
+    os.makedirs(current_app.config["PROPOSALS_UPLOAD_FOLDER"], exist_ok=True)
+    filename = _unique_filename(proposal_file.filename)
+    save_path = os.path.join(current_app.config["PROPOSALS_UPLOAD_FOLDER"], filename)
+    proposal_file.save(save_path)
+
+    # Clear old requirements and reset score
+    from backend.models.Requirement import ProposalRequirement
+    ProposalRequirement.query.filter_by(proposal_id=proposal_id).delete()
+    proposal.pdf_path = f"uploads/proposals/{filename}"
+    proposal.score = 0.0
+    proposal.status = "under_review"
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"message": f"Database error: {str(e)}"}), 500
+
+    tender = Tender.query.get(proposal.tender_id)
+    tender_req_dict = {
+        t_req.requirement_name: {
+            'display_label': t_req.display_label or t_req.requirement_name.replace('_', ' ').title(),
+            'points':        t_req.points,
+            'is_mandatory':  t_req.is_mandatory,
+        }
+        for t_req in tender.requirements
+    }
+
+    app = current_app._get_current_object()
+    threading.Thread(
+        target=_score_in_background,
+        args=(app, proposal_id, save_path, tender_req_dict),
+        daemon=True,
+    ).start()
+
+    return jsonify(proposal.to_dict()), 200
+
+
 @proposals_bp.patch("/api/proposals/<int:proposal_id>/status")
 @token_required
 def update_proposal_status(current_user, proposal_id):
@@ -245,3 +320,42 @@ def update_proposal_status(current_user, proposal_id):
     proposal.status = new_status
     db.session.commit()
     return jsonify(proposal.to_dict()), 200
+
+
+@proposals_bp.get("/api/proposals/<int:proposal_id>/debug")
+@token_required
+def debug_proposal(current_user, proposal_id):
+    """Debug: check if the proposal file exists and how much text can be extracted."""
+    if current_user.role not in ("admin", "super_admin"):
+        return jsonify({"message": "Forbidden"}), 403
+    proposal = Proposal.query.get(proposal_id)
+    if not proposal:
+        return jsonify({"message": "Proposal not found"}), 404
+
+    if not proposal.pdf_path:
+        return jsonify({"proposal_id": proposal_id, "error": "no pdf_path stored"}), 200
+
+    filename = proposal.pdf_path.split("/")[-1]
+    save_path = os.path.join(current_app.config["PROPOSALS_UPLOAD_FOLDER"], filename)
+    file_exists = os.path.exists(save_path)
+
+    result = {
+        "proposal_id": proposal_id,
+        "pdf_path": proposal.pdf_path,
+        "save_path": save_path,
+        "file_exists": file_exists,
+        "score": proposal.score,
+        "disqualified": bool(proposal.red_flags),
+        "requirements_count": len(proposal.requirements),
+    }
+
+    if file_exists:
+        try:
+            from backend.services.compliance_checker import extract_text
+            text = extract_text(save_path)
+            result["text_length"] = len(text)
+            result["text_preview"] = text[:300] if text else ""
+        except Exception as e:
+            result["extract_error"] = str(e)
+
+    return jsonify(result), 200

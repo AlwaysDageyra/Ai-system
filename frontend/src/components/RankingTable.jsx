@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Award, FileDown, Eye } from 'lucide-react';
+import { Award, FileDown, Eye, ShieldX } from 'lucide-react';
 
 const RankingTable = ({ rankings = [] }) => {
   const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
@@ -55,9 +55,18 @@ const RankingTable = ({ rankings = [] }) => {
                 {new Date(row.submitted_at).toLocaleDateString()}
               </td>
               <td className="whitespace-nowrap px-4 py-3.5">
-                <span className={`font-bold text-sm px-2.5 py-1 rounded-lg ${scoreStyle(row.score)}`}>
-                  {row.score.toFixed(0)}%
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className={`font-bold text-sm px-2.5 py-1 rounded-lg ${scoreStyle(row.score ?? 0)}`}>
+                    {(row.score ?? 0).toFixed(0)}%
+                  </span>
+                  {row.disqualified && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg"
+                      style={{ background: '#fef2f2', color: '#dc2626' }}
+                      title={row.disq_reasons?.join('; ')}>
+                      <ShieldX size={10} /> DISQ
+                    </span>
+                  )}
+                </div>
               </td>
               <td className="whitespace-nowrap px-4 py-3.5 text-right">
                 <div className="flex items-center justify-end gap-2">

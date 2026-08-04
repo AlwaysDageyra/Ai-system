@@ -37,15 +37,24 @@ def get_admin_stats(current_user):
         tenders = Tender.query.filter_by(created_by_id=current_user.id).all()
 
     tender_ids = [t.id for t in tenders]
-    active_tenders = sum(1 for t in tenders if not t.deadline or t.deadline > now)
+
+    def _deadline_passed(dl):
+        """Compare deadline safely regardless of whether SQLite returned it as naive or aware."""
+        if not dl:
+            return False
+        aware = dl if dl.tzinfo else dl.replace(tzinfo=timezone.utc)
+        return aware <= now
+
+    active_tenders = sum(1 for t in tenders if not _deadline_passed(t.deadline))
 
     proposals = Proposal.query.filter(Proposal.tender_id.in_(tender_ids)).all() if tender_ids else []
     total_proposals = len(proposals)
     pending  = sum(1 for p in proposals if p.status == "under_review")
     approved = sum(1 for p in proposals if p.status == "approved")
     rejected = sum(1 for p in proposals if p.status == "rejected")
-    top_score = max((p.score for p in proposals), default=0)
-    avg_score = round(sum(p.score for p in proposals) / total_proposals, 1) if total_proposals else 0
+    scores = [p.score for p in proposals if p.score is not None]
+    top_score = max(scores, default=0)
+    avg_score = round(sum(scores) / len(scores), 1) if scores else 0
 
     recent = (Proposal.query
               .filter(Proposal.tender_id.in_(tender_ids))

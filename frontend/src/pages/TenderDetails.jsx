@@ -6,7 +6,7 @@ import {
   FileText, Trophy, Clock, CheckCircle2, Users, ArrowLeft, ChevronRight,
   Download, XCircle, AlertCircle, Pencil, Trash2, Save, X, Send, AlertTriangle,
   ShieldCheck, Building2, Star, Hash, Calendar, Layers, BarChart2,
-  Mail, Phone, Briefcase,
+  Mail, Phone, Briefcase, RefreshCw,
 } from 'lucide-react';
 
 const SECTORS = [
@@ -84,6 +84,7 @@ const TenderDetails = () => {
   const [tender, setTender] = useState(null);
   const [rankings, setRankings] = useState([]);
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [myProposal, setMyProposal] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -103,6 +104,10 @@ const TenderDetails = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [approvalMsg, setApprovalMsg] = useState('');
+
+  const [reqOpen, setReqOpen] = useState(true);
+  const [rescoreLoading, setRescoreLoading] = useState(false);
+  const [rescoreMsg, setRescoreMsg]         = useState('');
 
   const userJson = localStorage.getItem('user');
   const user = userJson ? JSON.parse(userJson) : { role: 'supplier' };
@@ -137,6 +142,16 @@ const TenderDetails = () => {
     } finally { setRejectLoading(false); }
   };
 
+  const handleRescore = async () => {
+    setRescoreLoading(true); setRescoreMsg('');
+    try {
+      const res = await apiService.rescoreProposals(tenderId);
+      setRescoreMsg(res.data.message || 'Re-scoring started.');
+    } catch (err) {
+      setRescoreMsg(err?.response?.data?.message || 'Failed to start re-scoring.');
+    } finally { setRescoreLoading(false); }
+  };
+
   const handleSubmitForApproval = async () => {
     setSubmitLoading(true); setSubmitMsg('');
     try {
@@ -159,7 +174,9 @@ const TenderDetails = () => {
         }
         if (!isAdmin && !isSuperAdmin) {
           const pRes = await apiService.getProposals();
-          setHasSubmitted(pRes.data.some(p => p.tender_id === parseInt(tenderId)));
+          const found = pRes.data.find(p => p.tender_id === parseInt(tenderId));
+          setHasSubmitted(!!found);
+          setMyProposal(found || null);
         }
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load tender details.');
@@ -326,9 +343,21 @@ const TenderDetails = () => {
             <div className="shrink-0">
               {!isAdmin && !isSuperAdmin && (
                 hasSubmitted ? (
-                  <div className="inline-flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-xl"
-                    style={{ background: '#fffbeb', color: '#d97706', border: '1px solid #fde68a' }}>
-                    <AlertCircle size={14} /> Already Submitted
+                  <div className="flex flex-col items-end gap-2">
+                    <div className="inline-flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-xl"
+                      style={{ background: '#fffbeb', color: '#d97706', border: '1px solid #fde68a' }}>
+                      <AlertCircle size={14} /> Already Submitted
+                    </div>
+                    {myProposal && (
+                      <Link
+                        to={`/supplier/proposal/${myProposal.id}`}
+                        className="inline-flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-xl text-white transition-all"
+                        style={{ background: '#7c3aed' }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#6d28d9'}
+                        onMouseLeave={e => e.currentTarget.style.background = '#7c3aed'}>
+                        <FileText size={12} /> View / Edit Proposal
+                      </Link>
+                    )}
                   </div>
                 ) : isClosed ? (
                   <div className="inline-flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-xl"
@@ -565,90 +594,111 @@ const TenderDetails = () => {
         {/* Requirements panel — 2/3 width */}
         <div className="lg:col-span-2 rounded-2xl overflow-hidden"
           style={{ background: '#fff', border: '1px solid #f1f5f9', boxShadow: '0 2px 8px rgba(15,23,42,0.04)' }}>
-          <div className="px-6 py-4" style={{ borderBottom: '1px solid #f8fafc' }}>
-            <h2 className="font-bold text-[#0f172a] text-sm flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: '#f5f3ff' }}>
-                <CheckCircle2 size={13} style={{ color: '#7c3aed' }} />
+          <div className="px-6 py-4 flex items-center justify-between gap-2"
+            style={{ borderBottom: reqOpen ? '1px solid #f8fafc' : 'none' }}>
+            <button
+              onClick={() => setReqOpen(o => !o)}
+              className="flex items-center gap-2 flex-1 text-left transition-colors"
+              onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+              <h2 className="font-bold text-[#0f172a] text-sm flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: '#f5f3ff' }}>
+                  <CheckCircle2 size={13} style={{ color: '#7c3aed' }} />
+                </div>
+                Extracted Requirements
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg ml-1"
+                  style={{ background: '#f5f3ff', color: '#7c3aed' }}>{requirements.length}</span>
+              </h2>
+              <ChevronRight size={15} style={{
+                color: '#94a3b8',
+                transform: reqOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                transition: 'transform 0.2s ease',
+                flexShrink: 0,
+              }} />
+            </button>
+            {isAdmin && (
+              <div className="flex items-center gap-2 shrink-0">
+                {rescoreMsg && (
+                  <span className="text-[10px] font-semibold" style={{ color: rescoreMsg.includes('Failed') ? '#ef4444' : '#10b981' }}>
+                    {rescoreMsg}
+                  </span>
+                )}
+                <button
+                  onClick={handleRescore}
+                  disabled={rescoreLoading}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all disabled:opacity-50"
+                  style={{ background: '#f0fdf4', color: '#10b981', border: '1px solid #bbf7d0' }}
+                  onMouseEnter={e => { if (!rescoreLoading) { e.currentTarget.style.background = '#10b981'; e.currentTarget.style.color = '#fff'; }}}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#f0fdf4'; e.currentTarget.style.color = '#10b981'; }}>
+                  {rescoreLoading
+                    ? <><span className="animate-spin rounded-full h-2.5 w-2.5 border-b-2 border-current" /> Scoring…</>
+                    : <><RefreshCw size={10} /> Re-score Proposals</>}
+                </button>
               </div>
-              Required Documents
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg ml-1"
-                style={{ background: '#f5f3ff', color: '#7c3aed' }}>{requirements.length}</span>
-            </h2>
+            )}
           </div>
 
+          <AnimatePresence initial={false}>
+          {reqOpen && (
+          <motion.div
+            key="req-body"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.22, ease: 'easeInOut' }}
+            style={{ overflow: 'hidden' }}>
+
           {requirements.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 gap-2">
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
               <FileText size={28} style={{ color: '#e2e8f0' }} />
-              <p className="text-sm text-[#94a3b8] font-medium">No requirements specified</p>
+              {tender?.pdf_path ? (
+                <>
+                  <p className="text-sm text-[#94a3b8] font-medium">Extracting requirements…</p>
+                  <p className="text-xs text-[#cbd5e1]">The AI is processing the uploaded document. Refresh in a moment.</p>
+                </>
+              ) : (
+                <p className="text-sm text-[#94a3b8] font-medium">No requirements yet — upload a PDF when creating the tender</p>
+              )}
             </div>
           ) : (
-            <div className="p-5">
-              {/* Mandatory requirements */}
-              {mandatoryReqs.length > 0 && (
-                <div className="mb-5">
-                  <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: '#ef4444' }}>
-                    Mandatory
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {mandatoryReqs.map((req, idx) => {
-                      const label = typeof req === 'object' ? req.display_label : req.replace(/_/g, ' ');
-                      const { icon: Icon, color, bg } = getReqIcon(typeof req === 'object' ? req.requirement_name : req);
-                      return (
-                        <div key={idx} className="flex items-center gap-3 p-3.5 rounded-xl transition-all"
-                          style={{ background: '#fef2f2', border: '1px solid #fecaca' }}
-                          onMouseEnter={e => e.currentTarget.style.background = '#fee2e2'}
-                          onMouseLeave={e => e.currentTarget.style.background = '#fef2f2'}>
-                          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                            style={{ background: '#fff', border: '1px solid #fecaca' }}>
-                            <Icon size={15} style={{ color: '#ef4444' }} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-[#0f172a] truncate">{label}</p>
-                            <span className="text-[10px] font-bold" style={{ color: '#ef4444' }}>Required</span>
-                          </div>
-                        </div>
-                      );
-                    })}
+            <div className="p-5 flex flex-col gap-2">
+              {requirements.map((req, idx) => {
+                const label = typeof req === 'object' ? req.display_label : req.replace(/_/g, ' ');
+                const pts = typeof req === 'object' ? req.points : null;
+                const mandatory = typeof req === 'object' ? req.is_mandatory : false;
+                return (
+                  <div key={idx} className="flex gap-3 p-4 rounded-xl"
+                    style={{
+                      background: mandatory ? '#fef2f2' : '#fafafa',
+                      border: `1px solid ${mandatory ? '#fecaca' : '#f1f5f9'}`,
+                      borderLeft: `3px solid ${mandatory ? '#ef4444' : '#7c3aed'}`,
+                    }}>
+                    <span className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold mt-0.5"
+                      style={{ background: mandatory ? '#fee2e2' : '#ede9fe', color: mandatory ? '#ef4444' : '#7c3aed' }}>
+                      {idx + 1}
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-sm text-[#1e293b] leading-relaxed" style={{ fontWeight: 500 }}>{label}</p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        {mandatory && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                            style={{ background: '#fee2e2', color: '#ef4444' }}>Mandatory</span>
+                        )}
+                        {pts != null && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                            style={{ background: '#ede9fe', color: '#7c3aed' }}>{pts} pts</span>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
-
-              {/* Scored requirements */}
-              {scoredReqs.length > 0 && (
-                <div>
-                  {mandatoryReqs.length > 0 && (
-                    <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: '#7c3aed' }}>
-                      Scored Documents
-                    </p>
-                  )}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {scoredReqs.map((req, idx) => {
-                      const label = typeof req === 'object' ? req.display_label : req.replace(/_/g, ' ');
-                      const pts = typeof req === 'object' ? req.points : null;
-                      const { icon: Icon, color, bg } = getReqIcon(typeof req === 'object' ? req.requirement_name : req);
-                      return (
-                        <div key={idx} className="flex items-center gap-3 p-3.5 rounded-xl transition-all"
-                          style={{ background: '#fafafa', border: '1px solid #f1f5f9' }}
-                          onMouseEnter={e => { e.currentTarget.style.background = '#f5f3ff'; e.currentTarget.style.borderColor = '#ede9fe'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = '#fafafa'; e.currentTarget.style.borderColor = '#f1f5f9'; }}>
-                          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                            style={{ background: bg }}>
-                            <Icon size={15} style={{ color }} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-[#0f172a] truncate">{label}</p>
-                            {pts != null && (
-                              <span className="text-[10px] font-bold" style={{ color: '#7c3aed' }}>{pts} pts</span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+                );
+              })}
             </div>
           )}
+
+          </motion.div>
+          )}
+          </AnimatePresence>
         </div>
 
         {/* Right sidebar */}

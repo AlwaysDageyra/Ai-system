@@ -5,7 +5,7 @@ import { apiService } from '../services/api';
 import {
   FileText, Users, CheckCircle2, Clock, Plus, Trophy,
   TrendingUp, AlertCircle, ChevronRight, Zap, BarChart3,
-  XCircle, ArrowUpRight,
+  XCircle, ArrowUpRight, AlertTriangle,
 } from 'lucide-react';
 
 /* ── Animated counter ── */
@@ -121,6 +121,7 @@ const Dashboard = () => {
   const [proposals, setProposals] = useState([]);
   const [adminStats, setAdminStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [profileComplete, setProfileComplete] = useState(true);
 
   const userJson = localStorage.getItem('user');
   const user = userJson ? JSON.parse(userJson) : { role: 'supplier', name: 'User' };
@@ -143,6 +144,15 @@ const Dashboard = () => {
             const statsRes = await apiService.getAdminStats();
             setAdminStats(statsRes.data);
           } catch { /* stats optional */ }
+        }
+
+        if (isAdmin) {
+          try {
+            const profileRes = await apiService.getProfile();
+            const p = profileRes.data;
+            const required = ['company_name', 'company_type', 'country', 'address', 'phone', 'contact_person'];
+            setProfileComplete(required.every(f => p[f]?.trim()));
+          } catch { /* ignore */ }
         }
       } catch { /* ignore */ }
       finally { setLoading(false); }
@@ -208,6 +218,31 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6">
+
+      {/* Profile incomplete banner */}
+      {isAdmin && !profileComplete && (
+        <Link to="/admin/profile"
+          className="flex items-center justify-between gap-4 px-5 py-4 rounded-2xl transition-all"
+          style={{ background: '#fffbeb', border: '1px solid #fde68a' }}
+          onMouseEnter={e => e.currentTarget.style.background = '#fef3c7'}
+          onMouseLeave={e => e.currentTarget.style.background = '#fffbeb'}>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#fef3c7' }}>
+              <AlertTriangle size={15} style={{ color: '#d97706' }} />
+            </div>
+            <div>
+              <p className="text-sm font-bold" style={{ color: '#92400e' }}>Complete your organisation profile</p>
+              <p className="text-xs mt-0.5" style={{ color: '#b45309' }}>
+                You need to fill in your organisation details before you can create tenders.
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-bold px-3 py-1.5 rounded-lg shrink-0"
+            style={{ background: '#d97706', color: '#fff' }}>
+            Complete Profile
+          </span>
+        </Link>
+      )}
 
       {/* Stats row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

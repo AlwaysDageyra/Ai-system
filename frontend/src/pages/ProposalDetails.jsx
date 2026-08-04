@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 import ComplianceTable from '../components/ComplianceTable';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,6 +8,7 @@ import {
   Zap, Download, Building2, ShieldCheck, TrendingUp, Flag,
   ThumbsUp, ThumbsDown, AlertTriangle, User, Loader2,
   Phone, Globe, Hash, MapPin, Mail, BadgeCheck, BadgeAlert,
+  Trash2, RefreshCw, Upload, X,
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
@@ -190,6 +191,7 @@ const SupplierCard = ({ profile }) => {
 
 const ProposalDetails = () => {
   const { proposalId } = useParams();
+  const navigate = useNavigate();
   const [proposal, setProposal]             = useState(null);
   const [tender, setTender]                 = useState(null);
   const [supplierName, setSupplierName]     = useState('');
@@ -197,6 +199,12 @@ const ProposalDetails = () => {
   const [loading, setLoading]               = useState(true);
   const [error, setError]                   = useState('');
   const [statusLoading, setStatusLoading]   = useState(false);
+  const [deleteConfirm, setDeleteConfirm]   = useState(false);
+  const [deleteLoading, setDeleteLoading]   = useState(false);
+  const [replaceOpen, setReplaceOpen]       = useState(false);
+  const [replaceFile, setReplaceFile]       = useState(null);
+  const [replaceLoading, setReplaceLoading] = useState(false);
+  const [replaceError, setReplaceError]     = useState('');
   const pollRef = useRef(null);
 
   const userJson = localStorage.getItem('user');
@@ -218,27 +226,31 @@ const ProposalDetails = () => {
         setProposal(p);
 
         const [tRes, rRes, spRes] = await Promise.all([
-          apiService.getTender(p.tender_id),
+          apiService.getTender(p.tender_id).catch(() => ({ data: null })),
           apiService.getRankings(p.tender_id).catch(() => ({ data: { rankings: [] } })),
           apiService.getSupplierProfile(p.supplier_id).catch(() => null),
         ]);
         if (cancelled) return;
-        setTender(tRes.data);
+        if (tRes?.data) setTender(tRes.data);
         const match = (rRes.data.rankings || []).find(r => r.proposal_id === p.id);
         if (match) setSupplierName(match.supplier_name);
         if (spRes?.data) setSupplierProfile(spRes.data);
 
-        // If AI hasn't scored yet, poll until it does
+        // If AI hasn't scored yet, poll until it does (max 20 attempts ≈ 60 s)
         if (p.requirements?.length === 0) {
+          let pollCount = 0;
           pollRef.current = setInterval(async () => {
+            pollCount++;
             try {
               const fresh = await loadProposal(proposalId);
               if (cancelled) return;
-              if (fresh.requirements?.length > 0 || fresh.score > 0) {
+              if (fresh.requirements?.length > 0 || fresh.score > 0 || pollCount >= 20) {
                 setProposal(fresh);
                 clearInterval(pollRef.current);
               }
-            } catch {}
+            } catch {
+              clearInterval(pollRef.current);
+            }
           }, 3000);
         }
       } catch (err) {
@@ -263,6 +275,36 @@ const ProposalDetails = () => {
     } catch {
       setError('Failed to update status.');
     } finally { setStatusLoading(false); }
+  };
+
+  const handleDelete = async () => {
+    setDeleteLoading(true);
+    try {
+      await apiService.deleteProposal(proposal.id);
+      navigate('/supplier');
+    } catch {
+      setError('Failed to withdraw proposal.');
+      setDeleteLoading(false);
+      setDeleteConfirm(false);
+    }
+  };
+
+  const handleReplace = async (e) => {
+    e.preventDefault();
+    if (!replaceFile) { setReplaceError('Please select a replacement document.'); return; }
+    setReplaceError(''); setReplaceLoading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', replaceFile);
+      const res = await apiService.replaceProposal(proposal.id, fd);
+      setProposal(res.data);
+      setReplaceOpen(false);
+      setReplaceFile(null);
+    } catch (err) {
+      setReplaceError(err.response?.data?.message || 'Failed to replace document.');
+    } finally {
+      setReplaceLoading(false);
+    }
   };
 
   /* ── Loading skeleton ── */
@@ -305,7 +347,7 @@ const ProposalDetails = () => {
   const reqs          = proposal?.requirements || [];
   const mandatory     = reqs.filter(r => r.is_mandatory);
   const scoredReqs    = reqs.filter(r => !r.is_mandatory);
-  const mandatoryPassed  = mandatory.filter(r => r.detected && r.llm_verdict !== 'NO').length;
+  const mandatoryPassed  = mandatory.filter(r => r.detected).length;
   const mandatoryFailed  = mandatory.length - mandatoryPassed;
   const totalEarned      = scoredReqs.reduce((s, r) => s + (r.points_earned   ?? 0), 0);
   const totalPossible    = scoredReqs.reduce((s, r) => s + (r.points_possible ?? 0), 0);
@@ -403,8 +445,153 @@ const ProposalDetails = () => {
                 <Download size={11} /> Document
               </a>
             )}
+
+            {/* Supplier: replace + delete */}
+            {!isAdmin && (
+              <>
+                <button
+                  onClick={() => { setReplaceOpen(o => !o); setReplaceError(''); setReplaceFile(null); }}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all"
+                  style={{ background: '#f0f9ff', color: '#0ea5e9', border: '1px solid #bae6fd' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#0ea5e9'; e.currentTarget.style.color = '#fff'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#f0f9ff'; e.currentTarget.style.color = '#0ea5e9'; }}>
+                  <RefreshCw size={11} /> Replace Document
+                </button>
+                <button
+                  onClick={() => setDeleteConfirm(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all"
+                  style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#ef4444'; }}>
+                  <Trash2 size={11} /> Withdraw
+                </button>
+              </>
+            )}
           </div>
         </div>
+
+        {/* Replace document panel — supplier only */}
+        <AnimatePresence>
+          {!isAdmin && replaceOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.22 }}
+              style={{ overflow: 'hidden' }}
+            >
+              <form onSubmit={handleReplace}
+                className="rounded-2xl p-5 space-y-4"
+                style={{ background: '#fff', border: '1px solid #bae6fd', boxShadow: '0 2px 8px rgba(14,165,233,0.07)' }}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#f0f9ff' }}>
+                      <RefreshCw size={13} style={{ color: '#0ea5e9' }} />
+                    </div>
+                    <p className="text-sm font-bold text-[#0f172a]">Replace Proposal Document</p>
+                  </div>
+                  <button type="button" onClick={() => setReplaceOpen(false)}
+                    className="p-1.5 rounded-lg transition-colors"
+                    style={{ color: '#94a3b8' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                    <X size={14} />
+                  </button>
+                </div>
+                <p className="text-xs text-[#64748b]">
+                  Uploading a new document will replace your current submission and reset the compliance score.
+                  Your proposal status will return to <strong>Under Review</strong>.
+                </p>
+
+                {/* File drop zone */}
+                <label className="flex flex-col items-center justify-center gap-2 p-6 rounded-xl cursor-pointer transition-all"
+                  style={{ border: '2px dashed #bae6fd', background: replaceFile ? '#f0f9ff' : '#f8fafc' }}
+                  onDragOver={e => e.preventDefault()}
+                  onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) setReplaceFile(f); }}>
+                  <input type="file" accept=".pdf,.docx,.doc" className="hidden"
+                    onChange={e => setReplaceFile(e.target.files[0] || null)} />
+                  <Upload size={22} style={{ color: replaceFile ? '#0ea5e9' : '#94a3b8' }} />
+                  {replaceFile
+                    ? <p className="text-sm font-bold text-[#0ea5e9]">{replaceFile.name}</p>
+                    : <p className="text-sm font-semibold text-[#94a3b8]">Click or drag a PDF / Word file here</p>}
+                </label>
+
+                {replaceError && (
+                  <p className="text-xs font-semibold text-red-500 flex items-center gap-1.5">
+                    <AlertCircle size={12} /> {replaceError}
+                  </p>
+                )}
+
+                <div className="flex gap-2 justify-end">
+                  <button type="button" onClick={() => setReplaceOpen(false)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold transition-all"
+                    style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#f8fafc'}>
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={replaceLoading || !replaceFile}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white disabled:opacity-50 transition-all"
+                    style={{ background: '#0ea5e9' }}
+                    onMouseEnter={e => { if (!replaceLoading) e.currentTarget.style.background = '#0284c7'; }}
+                    onMouseLeave={e => e.currentTarget.style.background = '#0ea5e9'}>
+                    {replaceLoading
+                      ? <><span className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" /> Uploading…</>
+                      : <><Upload size={11} /> Submit Replacement</>}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Delete confirm modal */}
+        <AnimatePresence>
+          {deleteConfirm && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              style={{ background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(4px)' }}>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96, y: 8 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.96, y: 8 }}
+                transition={{ duration: 0.2 }}
+                className="w-full max-w-sm rounded-2xl p-6"
+                style={{ background: '#fff', border: '1px solid #f1f5f9', boxShadow: '0 24px 48px rgba(15,23,42,0.18)' }}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#fef2f2' }}>
+                    <Trash2 size={16} style={{ color: '#ef4444' }} />
+                  </div>
+                  <p className="font-bold text-[#0f172a]">Withdraw Proposal?</p>
+                </div>
+                <p className="text-sm text-[#64748b] leading-relaxed mb-5">
+                  This will permanently remove your proposal submission. You can resubmit a new proposal for this tender if the deadline hasn't passed.
+                </p>
+                <div className="flex gap-2">
+                  <button onClick={() => setDeleteConfirm(false)} disabled={deleteLoading}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all"
+                    style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#f8fafc'}>
+                    Cancel
+                  </button>
+                  <button onClick={handleDelete} disabled={deleteLoading}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-all"
+                    style={{ background: '#ef4444' }}
+                    onMouseEnter={e => { if (!deleteLoading) e.currentTarget.style.background = '#dc2626'; }}
+                    onMouseLeave={e => e.currentTarget.style.background = '#ef4444'}>
+                    {deleteLoading
+                      ? <span className="flex items-center justify-center gap-2"><span className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" /> Withdrawing…</span>
+                      : 'Yes, Withdraw'}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Supplier profile card — admin only */}
         {isAdmin && supplierProfile && (
@@ -446,8 +633,8 @@ const ProposalDetails = () => {
           )}
         </AnimatePresence>
 
-        {/* Summary metric cards */}
-        {isAdmin && (
+        {/* Summary metric cards — all roles */}
+        {(
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {METRICS.map(({ label, value, color, bg, icon: Icon }, i) => (
               <motion.div key={label}
@@ -538,50 +725,36 @@ const ProposalDetails = () => {
             </div>
           </div>
 
-          {/* Score gauge or supplier waiting */}
-          {isAdmin ? (
-            <div className="rounded-2xl p-5 flex flex-col items-center justify-center"
-              style={{ background: '#fff', border: '1px solid #f1f5f9', boxShadow: '0 2px 8px rgba(15,23,42,0.04)' }}>
-              {isProcessing ? (
-                <div className="text-center space-y-3 py-4">
-                  <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
-                    style={{ background: '#f5f3ff' }}>
-                    <Loader2 size={28} className="animate-spin" style={{ color: '#7c3aed' }} />
-                  </div>
-                  <p className="text-sm font-bold text-[#0f172a]">Awaiting AI Score</p>
-                  <p className="text-xs text-[#94a3b8]">The compliance engine is processing the document.</p>
+          {/* Score gauge — all roles */}
+          <div className="rounded-2xl p-5 flex flex-col items-center justify-center"
+            style={{ background: '#fff', border: '1px solid #f1f5f9', boxShadow: '0 2px 8px rgba(15,23,42,0.04)' }}>
+            {isProcessing ? (
+              <div className="text-center space-y-3 py-4">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
+                  style={{ background: '#f5f3ff' }}>
+                  <Loader2 size={28} className="animate-spin" style={{ color: '#7c3aed' }} />
                 </div>
-              ) : (
-                <>
-                  <ScoreGauge score={score} />
-                  <div className="grid grid-cols-3 gap-3 w-full mt-4 pt-4" style={{ borderTop: '1px solid #f1f5f9' }}>
-                    {[
-                      { label: 'Mandatory', val: `${mandatoryPassed}/${mandatory.length}`, color: mandatoryFailed > 0 ? '#ef4444' : '#10b981' },
-                      { label: 'Points',    val: `${totalEarned}/${totalPossible}`,         color: '#7c3aed' },
-                      { label: 'Flags',     val: redFlagCount,                              color: redFlagCount > 0 ? '#ef4444' : '#10b981' },
-                    ].map(({ label, val, color }) => (
-                      <div key={label} className="text-center">
-                        <p className="text-lg font-extrabold" style={{ color }}>{val}</p>
-                        <p className="text-[9px] font-bold uppercase tracking-widest text-[#94a3b8] mt-0.5">{label}</p>
-                      </div>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          ) : (
-            <div className="rounded-2xl p-6 flex flex-col items-center justify-center text-center"
-              style={{ background: 'linear-gradient(135deg,#f5f3ff,#ede9fe)', border: '1px solid #ddd6fe' }}>
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
-                style={{ background: 'linear-gradient(135deg,#7c3aed,#a78bfa)' }}>
-                <AlertCircle size={22} color="#fff" />
+                <p className="text-sm font-bold text-[#0f172a]">Awaiting AI Score</p>
+                <p className="text-xs text-[#94a3b8]">The compliance engine is processing your document.</p>
               </div>
-              <p className="font-bold text-[#0f172a]">Under Review</p>
-              <p className="text-sm text-[#64748b] mt-1 leading-relaxed">
-                Your proposal is being evaluated. You'll be notified once a decision has been made.
-              </p>
-            </div>
-          )}
+            ) : (
+              <>
+                <ScoreGauge score={score} />
+                <div className="grid grid-cols-3 gap-3 w-full mt-4 pt-4" style={{ borderTop: '1px solid #f1f5f9' }}>
+                  {[
+                    { label: 'Mandatory', val: `${mandatoryPassed}/${mandatory.length}`, color: mandatoryFailed > 0 ? '#ef4444' : '#10b981' },
+                    { label: 'Points',    val: `${totalEarned}/${totalPossible}`,         color: '#7c3aed' },
+                    { label: 'Flags',     val: redFlagCount,                              color: redFlagCount > 0 ? '#ef4444' : '#10b981' },
+                  ].map(({ label, val, color }) => (
+                    <div key={label} className="text-center">
+                      <p className="text-lg font-extrabold" style={{ color }}>{val}</p>
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-[#94a3b8] mt-0.5">{label}</p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* AI Recommendation — only when scored */}
@@ -619,8 +792,8 @@ const ProposalDetails = () => {
         )}
 
 
-        {/* Compliance breakdown */}
-        {isAdmin && (
+        {/* Compliance breakdown — all roles */}
+        {(
           <div>
             <div className="flex items-center gap-2 mb-3">
               <div className="w-7 h-7 rounded-lg flex items-center justify-center"

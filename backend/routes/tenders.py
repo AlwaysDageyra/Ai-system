@@ -36,10 +36,22 @@ def _extract_requirements_in_background(app, tender_id, save_path):
             if roberta_model and tokenizer:
                 reqs = extract_requirements(roberta_model, tokenizer, text)
             else:
-                # Keyword fallback if model not loaded
-                simple_reqs = AIRequirementService.extract_requirements(text, use_default_when_empty=True)
-                reqs = [{'text': r.replace('_', ' ').title(), 'confidence': 1.0, 'is_mandatory': False}
-                        for r in simple_reqs]
+                reqs = []
+
+            # If extraction still produced nothing, fall back to raw text segments
+            if not reqs:
+                from backend.services.compliance_checker import _segment, _find_requirements_section
+                section = _find_requirements_section(text)
+                segments = _segment(section)
+                reqs = [
+                    {
+                        'text': seg,
+                        'confidence': 0.5,
+                        'is_mandatory': any(kw in seg.lower() for kw in
+                                           ['license', 'registration', 'tax', 'certified', 'mandatory', 'required']),
+                    }
+                    for seg in segments[:25]  # cap at 25 to avoid noise
+                ]
 
             TenderRequirement.query.filter_by(tender_id=tender_id).delete()
             for idx, req in enumerate(reqs):
@@ -140,6 +152,14 @@ def create_tender(current_user):
     if current_user.role not in ("admin", "super_admin"):
         return jsonify({"message": "Forbidden: Admin role required"}), 403
 
+    if current_user.role == "admin":
+        from backend.routes.auth import profile_complete
+        if not profile_complete(current_user):
+            return jsonify({
+                "message": "Complete your organisation profile before creating a tender.",
+                "profile_incomplete": True,
+            }), 403
+
     SECTORS = {
         "Food Security & Agriculture", "ICT & Technology", "Education & Training",
         "Engineering & Infrastructure", "Energy & Power", "Office Supplies & Printing",
@@ -178,24 +198,12 @@ def create_tender(current_user):
         pdf_file.save(save_path)
         pdf_path = f"uploads/tenders/{filename}"
 
-    # Save tender as draft with default requirements as placeholders
     new_tender = Tender(
         title=title, description=description, pdf_path=pdf_path, deadline=deadline,
         sector=sector, approval_status="draft", created_by_id=current_user.id,
     )
     db.session.add(new_tender)
     db.session.flush()
-
-    default_reqs = AIRequirementService.DEFAULT_REQUIREMENTS
-    for req_name in default_reqs:
-        db.session.add(TenderRequirement(
-            tender_id=new_tender.id,
-            requirement_name=req_name,
-            display_label=req_name.replace('_', ' ').title(),
-            points=5,
-            is_mandatory=False,
-        ))
-
     db.session.commit()
 
     # If a document was uploaded, replace defaults with ML extraction in background
@@ -271,3 +279,65 @@ def delete_tender(current_user, tender_id):
     db.session.delete(tender)
     db.session.commit()
     return jsonify({"message": "Tender deleted successfully"}), 200
+
+
+@tenders_bp.post("/api/tenders/<int:tender_id>/rescore")
+@token_required
+def rescore_proposals(current_user, tender_id):
+    """Re-score every proposal for this tender against its current requirements.
+    Useful after requirement extraction completes or requirements are corrected."""
+    if current_user.role not in ("admin", "super_admin"):
+        return jsonify({"message": "Forbidden"}), 403
+
+    tender = Tender.query.get(tender_id)
+    if not tender:
+        return jsonify({"message": "Tender not found"}), 404
+
+    if current_user.role == "admin" and tender.created_by_id != current_user.id:
+        return jsonify({"message": "Forbidden: not your tender"}), 403
+
+    if not tender.requirements:
+        return jsonify({"message": "Tender has no requirements to score against. Re-upload the PDF first."}), 400
+
+    from backend.models.Proposal import Proposal
+    from backend.models.Requirement import ProposalRequirement
+    from backend.routes.proposals import _score_in_background
+
+    proposals = Proposal.query.filter_by(tender_id=tender_id).all()
+    if not proposals:
+        return jsonify({"message": "No proposals found for this tender.", "count": 0}), 200
+
+    tender_req_dict = {
+        r.requirement_name: {
+            'display_label': r.display_label or r.requirement_name.replace('_', ' ').title(),
+            'points':        r.points,
+            'is_mandatory':  r.is_mandatory,
+        }
+        for r in tender.requirements
+    }
+
+    # Clear old requirements and reset scores before re-scoring
+    for proposal in proposals:
+        ProposalRequirement.query.filter_by(proposal_id=proposal.id).delete()
+        proposal.score = 0.0
+    db.session.commit()
+
+    # Launch background scorer for each proposal that still has its file on disk
+    app = current_app._get_current_object()
+    launched = 0
+    for proposal in proposals:
+        if not proposal.pdf_path:
+            continue
+        filename = proposal.pdf_path.split("/")[-1]
+        save_path = os.path.join(current_app.config["PROPOSALS_UPLOAD_FOLDER"], filename)
+        if not os.path.exists(save_path):
+            continue
+        thread = threading.Thread(
+            target=_score_in_background,
+            args=(app, proposal.id, save_path, tender_req_dict),
+            daemon=True,
+        )
+        thread.start()
+        launched += 1
+
+    return jsonify({"message": f"Re-scoring {launched} proposal(s) in the background.", "count": launched}), 200
