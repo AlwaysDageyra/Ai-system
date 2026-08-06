@@ -3,7 +3,12 @@ import { useNavigate, Link } from 'react-router-dom';
 import { apiService } from '../services/api';
 import UploadCard from '../components/UploadCard';
 import { motion } from 'framer-motion';
-import { FilePlus, CheckCircle2, AlertTriangle, ArrowLeft, Calendar, Zap, Layers } from 'lucide-react';
+import { FilePlus, CheckCircle2, AlertTriangle, ArrowLeft, Calendar, Zap, Layers, Loader2 } from 'lucide-react';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
+import { Label } from '../components/ui/label';
+import { cn } from '../lib/utils';
 
 const SECTORS = [
   'Food Security & Agriculture',
@@ -60,28 +65,23 @@ const CreateTender = () => {
       {/* Header */}
       <div>
         <Link to="/tenders"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold mb-3 transition-colors"
-          style={{ color: '#94a3b8' }}
-          onMouseEnter={e => e.currentTarget.style.color = '#7c3aed'}
-          onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}>
+          className="inline-flex items-center gap-1.5 text-xs font-semibold mb-3 text-muted-foreground hover:text-primary no-underline transition-colors">
           <ArrowLeft size={13} /> Back to Tenders
         </Link>
-        <h1 className="text-2xl font-bold text-[#0f172a]">Create New Tender</h1>
-        <p className="text-sm text-[#94a3b8] mt-1">
+        <h1 className="text-2xl font-bold text-foreground">Create New Tender</h1>
+        <p className="text-sm text-muted-foreground mt-1">
           Fill in the details and upload a PDF. Requirements will be extracted automatically.
         </p>
       </div>
 
       {/* Draft workflow info */}
-      <div className="flex items-start gap-3 px-4 py-3.5 rounded-xl"
-        style={{ background: '#f5f3ff', border: '1px solid #ede9fe' }}>
-        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
-          style={{ background: 'linear-gradient(135deg, #7c3aed, #a78bfa)' }}>
-          <Zap size={12} color="#fff" fill="#fff" />
+      <div className="flex items-start gap-3 px-4 py-3.5 rounded-xl bg-primary/10 border border-primary/20">
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 bg-primary">
+          <Zap size={12} className="text-primary-foreground" fill="currentColor" />
         </div>
         <div>
-          <span className="text-xs font-bold text-[#7c3aed]">Draft Workflow</span>
-          <p className="text-xs text-[#6d28d9] mt-0.5 leading-relaxed">
+          <span className="text-xs font-bold text-primary">Draft Workflow</span>
+          <p className="text-xs text-primary/80 mt-0.5 leading-relaxed">
             Tender is saved as a draft → you submit it for approval → Super Admin reviews and publishes it.
           </p>
         </div>
@@ -92,48 +92,41 @@ const CreateTender = () => {
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-start gap-3 p-4 rounded-xl"
-          style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-          <CheckCircle2 size={16} className="text-green-500 shrink-0 mt-0.5" />
-          <p className="text-sm font-semibold text-green-700">{success}</p>
+          className="flex items-start gap-3 p-4 rounded-xl bg-success/10 border border-success/20">
+          <CheckCircle2 size={16} className="text-success shrink-0 mt-0.5" />
+          <p className="text-sm font-semibold text-success">{success}</p>
         </motion.div>
       )}
       {error && (
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-start gap-3 p-4 rounded-xl"
-          style={{ background: '#fef2f2', border: '1px solid #fecaca' }}>
-          <AlertTriangle size={16} className="text-red-500 shrink-0 mt-0.5" />
-          <p className="text-sm font-semibold text-red-600">{error}</p>
+          className="flex items-start gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20">
+          <AlertTriangle size={16} className="text-destructive shrink-0 mt-0.5" />
+          <p className="text-sm font-semibold text-destructive">{error}</p>
         </motion.div>
       )}
 
       {/* Form */}
-      <div className="rounded-2xl p-6"
-        style={{ background: '#fff', border: '1px solid #f1f5f9', boxShadow: '0 2px 12px rgba(15,23,42,0.06)' }}>
+      <div className="rounded-xl p-6 bg-card border border-border shadow-sm">
         <form onSubmit={handleSubmit} className="space-y-5">
 
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-[#0f172a]">
-              Tender Title <span className="text-red-500">*</span>
-            </label>
-            <input
+            <Label className="text-sm font-semibold text-foreground">
+              Tender Title <span className="text-destructive">*</span>
+            </Label>
+            <Input
               type="text" required value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder="e.g., Solar Farm Installation Project 2026"
-              className="w-full px-4 py-3 rounded-xl text-sm font-medium outline-none transition-all"
-              style={{ background: '#f8fafc', border: '1px solid #e2e8f0', color: '#0f172a' }}
-              onFocus={e => { e.target.style.borderColor = '#7c3aed'; e.target.style.boxShadow = '0 0 0 3px rgba(124,58,237,0.08)'; e.target.style.background = '#fff'; }}
-              onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; e.target.style.background = '#f8fafc'; }}
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-[#0f172a] flex items-center gap-1.5">
-              <Layers size={14} style={{ color: '#94a3b8' }} />
-              Sector <span className="text-red-500">*</span>
-            </label>
+            <Label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+              <Layers size={14} className="text-muted-foreground" />
+              Sector <span className="text-destructive">*</span>
+            </Label>
             <div className="flex flex-wrap gap-2">
               {SECTORS.map(s => {
                 const active = sector === s;
@@ -141,70 +134,59 @@ const CreateTender = () => {
                   <button
                     key={s} type="button"
                     onClick={() => setSector(s)}
-                    className="px-3.5 py-2 rounded-xl text-sm font-semibold transition-all"
-                    style={{
-                      background: active ? '#7c3aed' : '#f8fafc',
-                      color: active ? '#fff' : '#64748b',
-                      border: active ? '1px solid #7c3aed' : '1px solid #e2e8f0',
-                      boxShadow: active ? '0 2px 8px rgba(124,58,237,0.25)' : 'none',
-                    }}
+                    className={cn(
+                      'px-3.5 py-2 rounded-lg text-sm font-semibold border transition-colors',
+                      active ? 'bg-primary text-primary-foreground border-primary shadow-sm' : 'bg-muted text-muted-foreground border-border hover:bg-accent'
+                    )}
                   >
                     {s}
                   </button>
                 );
               })}
             </div>
-            {!sector && <p className="text-xs text-[#94a3b8]">Select the sector this tender belongs to.</p>}
+            {!sector && <p className="text-xs text-muted-foreground">Select the sector this tender belongs to.</p>}
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-[#0f172a]">Description</label>
-            <textarea
+            <Label className="text-sm font-semibold text-foreground">Description</Label>
+            <Textarea
               rows={4} value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder="Describe the scope, objectives, and any important notes..."
-              className="w-full px-4 py-3 rounded-xl text-sm font-medium outline-none transition-all resize-none"
-              style={{ background: '#f8fafc', border: '1px solid #e2e8f0', color: '#0f172a' }}
-              onFocus={e => { e.target.style.borderColor = '#7c3aed'; e.target.style.boxShadow = '0 0 0 3px rgba(124,58,237,0.08)'; e.target.style.background = '#fff'; }}
-              onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; e.target.style.background = '#f8fafc'; }}
+              className="resize-none"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-[#0f172a] flex items-center gap-1.5">
-              <Calendar size={14} style={{ color: '#94a3b8' }} /> Submission Deadline
-            </label>
-            <input
+            <Label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+              <Calendar size={14} className="text-muted-foreground" /> Submission Deadline
+            </Label>
+            <Input
               type="date" value={deadline}
               min={new Date().toISOString().split('T')[0]}
               onChange={e => setDeadline(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl text-sm font-medium outline-none transition-all"
-              style={{ background: '#f8fafc', border: '1px solid #e2e8f0', color: '#0f172a' }}
-              onFocus={e => { e.target.style.borderColor = '#7c3aed'; e.target.style.boxShadow = '0 0 0 3px rgba(124,58,237,0.08)'; }}
-              onBlur={e => { e.target.style.borderColor = '#e2e8f0'; e.target.style.boxShadow = 'none'; }}
             />
-            <p className="text-xs text-[#94a3b8]">Optional. Suppliers cannot submit after this date.</p>
+            <p className="text-xs text-muted-foreground">Optional. Suppliers cannot submit after this date.</p>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-[#0f172a]">Tender Specification PDF</label>
+            <Label className="text-sm font-semibold text-foreground">Tender Specification PDF</Label>
             <UploadCard onFileSelect={setFile} file={file} />
-            <p className="text-xs text-[#94a3b8] mt-1.5">
+            <p className="text-xs text-muted-foreground mt-1.5">
               If no PDF is uploaded, default requirements (Company Profile, Tax Compliance, Bank Statement) will be used.
             </p>
           </div>
 
-          <div className="pt-2" style={{ borderTop: '1px solid #f1f5f9' }}>
-            <button
+          <div className="pt-2 border-t border-border">
+            <Button
               type="submit" disabled={loading || !sector}
-              className="w-full py-3 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-[0.99] disabled:opacity-50"
-              style={{ background: loading ? '#7c3aed' : 'linear-gradient(135deg, #0f172a, #7c3aed)', boxShadow: '0 4px 16px rgba(124,58,237,0.3)' }}
-              onMouseEnter={e => { if (!loading) e.currentTarget.style.boxShadow = '0 6px 20px rgba(124,58,237,0.45)'; }}
-              onMouseLeave={e => e.currentTarget.style.boxShadow = '0 4px 16px rgba(124,58,237,0.3)'}
+              size="lg"
+              className="w-full"
+              style={{ background: loading ? 'var(--primary)' : 'linear-gradient(135deg, var(--foreground), var(--primary))' }}
             >
               {loading ? (
                 <>
-                  <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                  <Loader2 size={16} className="animate-spin" />
                   Saving Draft...
                 </>
               ) : (
@@ -212,7 +194,7 @@ const CreateTender = () => {
                   <FilePlus size={16} /> Save as Draft
                 </>
               )}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

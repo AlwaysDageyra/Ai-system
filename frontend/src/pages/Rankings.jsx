@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { apiService } from '../services/api';
 import RankingTable from '../components/RankingTable';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   Trophy, ChevronDown, Play, CheckCircle2,
-  FileText, Users, Shield, BarChart3, Zap, ArrowLeft, RefreshCw,
-  Eye, User, Building2,
+  FileText, Users, Shield, BarChart3, Zap, ArrowLeft, RefreshCw, Eye,
 } from 'lucide-react';
+import { Button } from '../components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { cn } from '../lib/utils';
 
 const MESSAGES = [
   'Reviewing bidder documents...',
@@ -34,6 +36,13 @@ const ACTIVITIES = [
 ];
 
 const STAGE_LABELS = ['Submitted', 'Under Review', 'Evaluated', 'Ranked'];
+const STAGE_TONE = ['bg-muted text-muted-foreground', 'bg-sky-50 text-sky-600', 'bg-warning/10 text-warning', 'bg-primary/10 text-primary'];
+
+const PODIUM_TONE = [
+  { gradient: 'linear-gradient(135deg, var(--primary), oklch(0.7 0.15 296.9))', medal: '🥈' },
+  { gradient: 'linear-gradient(135deg, #f59e0b, #fbbf24)', medal: '🥇' },
+  { gradient: 'linear-gradient(135deg, #d97706, #f59e0b)', medal: '🥉' },
+];
 
 const Rankings = () => {
   const [tenders, setTenders] = useState([]);
@@ -160,17 +169,10 @@ const Rankings = () => {
 
   const top3 = rankings.slice(0, 3);
   const PODIUM = [
-    { entry: top3[1], height: 80,  gradient: 'linear-gradient(135deg,#7c3aed,#a78bfa)', num: '2', medal: '🥈' },
-    { entry: top3[0], height: 108, gradient: 'linear-gradient(135deg,#f59e0b,#fbbf24)', num: '1', medal: '🥇' },
-    { entry: top3[2], height: 60,  gradient: 'linear-gradient(135deg,#d97706,#f59e0b)', num: '3', medal: '🥉' },
+    { entry: top3[1], height: 80, ...PODIUM_TONE[0], num: '2' },
+    { entry: top3[0], height: 108, ...PODIUM_TONE[1], num: '1' },
+    { entry: top3[2], height: 60, ...PODIUM_TONE[2], num: '3' },
   ];
-
-  const stageBg = (s) => {
-    if (s === 3) return { bg: '#f5f3ff', color: '#7c3aed' };
-    if (s === 2) return { bg: '#fffbeb', color: '#d97706' };
-    if (s === 1) return { bg: '#f0f9ff', color: '#0ea5e9' };
-    return { bg: '#f8fafc', color: '#94a3b8' };
-  };
 
   return (
     <div className="space-y-5">
@@ -184,119 +186,103 @@ const Rankings = () => {
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-[#0f172a] flex items-center gap-2">
+          <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
             <Trophy size={19} className="text-amber-500" /> Supplier Leaderboard
           </h1>
-          <p className="text-xs text-[#94a3b8] mt-0.5">AI-powered procurement evaluation &amp; ranking.</p>
+          <p className="text-xs text-muted-foreground mt-0.5">AI-powered procurement evaluation &amp; ranking.</p>
         </div>
-        <div className="relative shrink-0">
-          <select
+        <div className="shrink-0">
+          <Select
             value={selectedTenderId}
-            onChange={e => {
-              const tid = e.target.value;
+            onValueChange={(tid) => {
               setSelectedTenderId(tid);
               const t = tenders.find(x => String(x.id) === tid);
               if (t) setTenderTitle(t.title);
             }}
             disabled={tenderLoading || phase === 'screening'}
-            className="appearance-none pl-3 pr-8 py-2 rounded-xl text-sm font-semibold outline-none cursor-pointer disabled:opacity-40"
-            style={{ background: '#fff', border: '1px solid #e2e8f0', color: '#0f172a' }}
           >
-            {tenders.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
-          </select>
-          <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#94a3b8' }} />
+            <SelectTrigger className="min-w-[220px]">
+              <SelectValue placeholder="Select a tender…" />
+            </SelectTrigger>
+            <SelectContent>
+              {tenders.map(t => <SelectItem key={t.id} value={String(t.id)}>{t.title}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       {error && (
-        <div className="p-4 rounded-xl text-sm font-medium"
-          style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#ef4444' }}>{error}</div>
+        <div className="p-4 rounded-xl text-sm font-medium bg-destructive/10 border border-destructive/20 text-destructive">{error}</div>
       )}
 
       {/* ── IDLE phase ── */}
       {phase === 'idle' && (
-        <div className="rounded-2xl overflow-hidden"
-          style={{ background: '#fff', border: '1px solid #f1f5f9', boxShadow: '0 2px 8px rgba(15,23,42,0.04)' }}>
-          <div className="px-6 py-5 flex items-center justify-between gap-4 flex-wrap"
-            style={{ borderBottom: '1px solid #f8fafc' }}>
+        <div className="rounded-xl overflow-hidden bg-card border border-border shadow-sm">
+          <div className="px-6 py-5 flex items-center justify-between gap-4 flex-wrap border-b border-border">
             <div>
-              <h2 className="font-bold text-[#0f172a] text-sm flex items-center gap-2">
-                <Users size={14} style={{ color: '#0ea5e9' }} />
+              <h2 className="font-bold text-foreground text-sm flex items-center gap-2">
+                <Users size={14} className="text-sky-600" />
                 Submitted Bidders
                 {rankings.length > 0 && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold"
-                    style={{ background: '#f0f9ff', color: '#0ea5e9' }}>{rankings.length}</span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-50 text-sky-600">{rankings.length}</span>
                 )}
               </h2>
-              <p className="text-xs text-[#94a3b8] mt-0.5">{tenderTitle}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{tenderTitle}</p>
             </div>
             {!fetchLoading && rankings.length > 0 && (
-              <button
+              <Button
                 onClick={startScreening}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all group shrink-0"
-                style={{ background: 'linear-gradient(135deg,#0f172a,#7c3aed)', boxShadow: '0 4px 12px rgba(124,58,237,0.3)' }}
-                onMouseEnter={e => e.currentTarget.style.boxShadow = '0 6px 20px rgba(124,58,237,0.45)'}
-                onMouseLeave={e => e.currentTarget.style.boxShadow = '0 4px 12px rgba(124,58,237,0.3)'}
+                size="lg"
+                className="shrink-0 group"
+                style={{ background: 'linear-gradient(135deg, var(--foreground), var(--primary))' }}
               >
                 <Play size={13} className="group-hover:scale-110 transition-transform" />
                 Start Screening &amp; Ranking
-              </button>
+              </Button>
             )}
           </div>
 
           {fetchLoading ? (
             <div className="flex items-center justify-center py-16">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#ede9fe] border-t-[#7c3aed]" />
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary/20 border-t-primary" />
             </div>
           ) : rankings.length === 0 ? (
             <div className="py-16 text-center">
-              <FileText size={28} style={{ color: '#e2e8f0' }} className="mx-auto mb-3" />
-              <p className="text-sm font-semibold text-[#94a3b8]">No proposals submitted yet</p>
-              <p className="text-xs text-[#94a3b8] mt-1">Suppliers must submit proposals before screening can begin.</p>
+              <FileText size={28} className="text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-sm font-semibold text-muted-foreground">No proposals submitted yet</p>
+              <p className="text-xs text-muted-foreground mt-1">Suppliers must submit proposals before screening can begin.</p>
             </div>
           ) : (
-            <div className="divide-y" style={{ borderColor: '#f8fafc' }}>
+            <div className="divide-y divide-border">
               {rankings.map((r, i) => {
                 const initials = (r.supplier_name || 'S').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
                 return (
-                  <div key={r.proposal_id}
-                    className="flex items-center justify-between px-6 py-4 transition-all gap-4"
-                    onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                  <div key={r.proposal_id} className="flex items-center justify-between px-6 py-4 gap-4 transition-colors hover:bg-accent/50">
 
-                    {/* Rank + avatar + name */}
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center shrink-0"
-                        style={{ background: '#f5f3ff', color: '#7c3aed' }}>{i + 1}</span>
+                      <span className="w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center shrink-0 bg-primary/10 text-primary">{i + 1}</span>
 
-                      {/* Avatar */}
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-bold text-xs"
-                        style={{ background: 'linear-gradient(135deg,#7c3aed,#a78bfa)', color: '#fff', letterSpacing: 1 }}>
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-bold text-xs bg-primary text-primary-foreground tracking-wide">
                         {initials}
                       </div>
 
                       <div className="min-w-0">
-                        <p className="text-sm font-bold text-[#0f172a] truncate">{r.supplier_name}</p>
-                        <p className="text-[11px] text-[#94a3b8] mt-0.5">
+                        <p className="text-sm font-bold text-foreground truncate">{r.supplier_name}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
                           Proposal #{r.proposal_id} · submitted {new Date(r.submitted_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                         </p>
                       </div>
                     </div>
 
-                    {/* Right side: status + view button */}
                     <div className="flex items-center gap-3 shrink-0">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold"
-                        style={{ background: '#f0f9ff', color: '#0ea5e9', border: '1px solid #bae6fd' }}>
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-sky-50 text-sky-600 border border-sky-200">
                         <span className="h-1.5 w-1.5 rounded-full bg-sky-500 animate-pulse" />
                         Submitted
                       </span>
 
                       <Link
                         to={`/proposal/${r.proposal_id}`}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all"
-                        style={{ background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ede9fe' }}
-                        onMouseEnter={e => { e.currentTarget.style.background = '#7c3aed'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = '#7c3aed'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = '#f5f3ff'; e.currentTarget.style.color = '#7c3aed'; e.currentTarget.style.borderColor = '#ede9fe'; }}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-bold bg-primary/10 text-primary border border-primary/20 no-underline transition-colors hover:bg-primary hover:text-primary-foreground"
                       >
                         <Eye size={12} /> View Details
                       </Link>
@@ -312,94 +298,79 @@ const Rankings = () => {
       {/* ── SCREENING phase ── */}
       {phase === 'screening' && (
         <div className="space-y-4">
-          {/* Status header */}
-          <div className="rounded-2xl p-6 text-center space-y-3"
-            style={{ background: 'linear-gradient(135deg,#0f0a1e,#1a0a3a)', border: '1px solid rgba(124,58,237,0.2)' }}>
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold"
-              style={{ background: 'rgba(124,58,237,0.2)', color: '#a78bfa', border: '1px solid rgba(167,139,250,0.3)' }}>
+          <div className="rounded-xl p-6 text-center space-y-3 border border-primary/20" style={{ background: 'linear-gradient(135deg, oklch(0.145 0 0), oklch(0.2 0.03 296.9))' }}>
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold bg-violet-400/20 text-violet-300 border border-violet-400/30">
               <Zap size={10} className="animate-pulse text-amber-400" />
               AI Evaluation Engine Active
             </span>
             <div className="h-7 flex items-center justify-center overflow-hidden">
               <p key={msgIdx} className="msg-fade text-base font-bold text-white leading-tight">{MESSAGES[msgIdx]}</p>
             </div>
-            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>{tenderTitle}</p>
+            <p className="text-xs text-white/35">{tenderTitle}</p>
           </div>
 
-          {/* Progress */}
-          <div className="rounded-2xl p-5 space-y-3"
-            style={{ background: '#fff', border: '1px solid #f1f5f9' }}>
+          <div className="rounded-xl p-5 space-y-3 bg-card border border-border">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8]">Evaluation Progress</span>
-              <span className="text-sm font-bold text-[#0f172a] tabular-nums">{Math.round(progress)}%</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Evaluation Progress</span>
+              <span className="text-sm font-bold text-foreground tabular-nums">{Math.round(progress)}%</span>
             </div>
-            <div className="h-2 rounded-full overflow-hidden" style={{ background: '#f1f5f9' }}>
+            <div className="h-2 rounded-full overflow-hidden bg-muted">
               <div className="h-full rounded-full transition-all duration-75 linear"
-                style={{
-                  width: `${progress}%`,
-                  background: 'linear-gradient(90deg, #7c3aed, #a78bfa)',
-                }} />
+                style={{ width: `${progress}%`, background: 'linear-gradient(90deg, var(--primary), oklch(0.7 0.15 296.9))' }} />
             </div>
-            <p className="text-xs text-[#94a3b8]">
+            <p className="text-xs text-muted-foreground">
               {progress < 100
                 ? `Estimated completion: ${Math.max(1, Math.ceil(((100 - progress) / 100) * 7))}s remaining`
                 : 'Finalizing results…'}
             </p>
           </div>
 
-          {/* Counters */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: 'Bidders Reviewed',      value: counters.reviewed,     icon: Users,     color: '#7c3aed', bg: '#f5f3ff' },
-              { label: 'Documents Processed',   value: counters.documents,    icon: FileText,  color: '#0ea5e9', bg: '#f0f9ff' },
-              { label: 'Requirements Verified', value: counters.requirements, icon: Shield,    color: '#10b981', bg: '#f0fdf4' },
-              { label: 'Scores Generated',      value: counters.scores,       icon: BarChart3, color: '#f59e0b', bg: '#fffbeb' },
-            ].map(({ label, value, icon: Icon, color, bg }) => (
-              <div key={label} className="rounded-2xl p-4 text-center"
-                style={{ background: '#fff', border: '1px solid #f1f5f9' }}>
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center mx-auto mb-2" style={{ background: bg }}>
-                  <Icon size={14} style={{ color }} />
+              { label: 'Bidders Reviewed', value: counters.reviewed, icon: Users, tone: 'bg-primary/10 text-primary' },
+              { label: 'Documents Processed', value: counters.documents, icon: FileText, tone: 'bg-sky-50 text-sky-600' },
+              { label: 'Requirements Verified', value: counters.requirements, icon: Shield, tone: 'bg-success/10 text-success' },
+              { label: 'Scores Generated', value: counters.scores, icon: BarChart3, tone: 'bg-warning/10 text-warning' },
+            ].map(({ label, value, icon: Icon, tone }) => (
+              <div key={label} className="rounded-xl p-4 text-center bg-card border border-border">
+                <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center mx-auto mb-2', tone)}>
+                  <Icon size={14} />
                 </div>
-                <p className="text-2xl font-extrabold text-[#0f172a] tabular-nums">{value}</p>
-                <p className="text-[10px] text-[#94a3b8] mt-1 leading-tight">{label}</p>
+                <p className="text-2xl font-extrabold text-foreground tabular-nums">{value}</p>
+                <p className="text-[10px] text-muted-foreground mt-1 leading-tight">{label}</p>
               </div>
             ))}
           </div>
 
-          {/* Bidder progress + Live activity */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #f1f5f9' }}>
-              <div className="px-5 py-3.5" style={{ borderBottom: '1px solid #f8fafc' }}>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8]">Bidder Progress</p>
+            <div className="rounded-xl overflow-hidden bg-card border border-border">
+              <div className="px-5 py-3.5 border-b border-border">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Bidder Progress</p>
               </div>
-              <div className="divide-y" style={{ borderColor: '#f8fafc' }}>
+              <div className="divide-y divide-border">
                 {bidderStages.length === 0 ? (
-                  <p className="text-xs text-[#94a3b8] text-center py-8">No bidders</p>
-                ) : bidderStages.slice(0, 6).map((b, i) => {
-                  const sc = stageBg(b.stage);
-                  return (
-                    <div key={i} className="flex items-center justify-between px-5 py-3 gap-3">
-                      <p className="text-xs font-semibold text-[#0f172a] truncate min-w-0">{b.name}</p>
-                      <span className="shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-full transition-all duration-500"
-                        style={{ background: sc.bg, color: sc.color }}>
-                        {STAGE_LABELS[b.stage]}
-                      </span>
-                    </div>
-                  );
-                })}
+                  <p className="text-xs text-muted-foreground text-center py-8">No bidders</p>
+                ) : bidderStages.slice(0, 6).map((b, i) => (
+                  <div key={i} className="flex items-center justify-between px-5 py-3 gap-3">
+                    <p className="text-xs font-semibold text-foreground truncate min-w-0">{b.name}</p>
+                    <span className={cn('shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-full transition-colors duration-500', STAGE_TONE[b.stage])}>
+                      {STAGE_LABELS[b.stage]}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #f1f5f9' }}>
-              <div className="px-5 py-3.5 flex items-center gap-2" style={{ borderBottom: '1px solid #f8fafc' }}>
-                <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8]">Live Activity</p>
+            <div className="rounded-xl overflow-hidden bg-card border border-border">
+              <div className="px-5 py-3.5 flex items-center gap-2 border-b border-border">
+                <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Live Activity</p>
               </div>
-              <div className="divide-y" style={{ borderColor: '#f8fafc' }}>
+              <div className="divide-y divide-border">
                 {activityLog.map((a, i) => (
-                  <div key={a.id} className={`flex items-start gap-3 px-5 py-3 ${i === 0 ? 'activity-new' : ''}`}>
-                    <CheckCircle2 size={11} className="text-green-500 shrink-0 mt-0.5" />
-                    <p className="text-xs text-[#64748b] leading-relaxed">{a.text}</p>
+                  <div key={a.id} className={cn('flex items-start gap-3 px-5 py-3', i === 0 && 'activity-new')}>
+                    <CheckCircle2 size={11} className="text-success shrink-0 mt-0.5" />
+                    <p className="text-xs text-muted-foreground leading-relaxed">{a.text}</p>
                   </div>
                 ))}
               </div>
@@ -411,12 +382,9 @@ const Rankings = () => {
       {/* ── COMPLETE phase ── */}
       {phase === 'complete' && (
         <div className="space-y-5">
-          {/* Podium */}
           {top3.length > 0 && (
-            <div className="rounded-2xl p-6"
-              style={{ background: 'linear-gradient(135deg,#0f0a1e,#1a0a3a)', border: '1px solid rgba(124,58,237,0.2)' }}>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-center mb-6"
-                style={{ color: 'rgba(167,139,250,0.5)' }}>
+            <div className="rounded-xl p-6 border border-primary/20" style={{ background: 'linear-gradient(135deg, oklch(0.145 0 0), oklch(0.2 0.03 296.9))' }}>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-center mb-6 text-violet-300/60">
                 Top Performers — {tenderTitle}
               </p>
               <div className="flex items-end justify-center gap-4 max-w-xs mx-auto">
@@ -425,7 +393,7 @@ const Rankings = () => {
                   return (
                     <div key={i} className="flex flex-col items-center gap-2 flex-1">
                       <div className="text-center w-full">
-                        <p className="text-xs font-semibold truncate" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                        <p className="text-xs font-semibold truncate text-white/60">
                           {slot.entry.supplier_name}
                         </p>
                         <p className="text-base font-extrabold text-white">{slot.entry.score.toFixed(0)}%</p>
@@ -445,27 +413,23 @@ const Rankings = () => {
             </div>
           )}
 
-          {/* Full rankings */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-bold text-[#0f172a]">Full Rankings — {tenderTitle}</h2>
+              <h2 className="text-sm font-bold text-foreground">Full Rankings — {tenderTitle}</h2>
               <div className="flex items-center gap-2">
-                <button
+                <Button
+                  size="sm"
                   onClick={() => { sessionStorage.removeItem(`ranked_${selectedTenderId}`); startScreening(); }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-all"
-                  style={{ background: '#7c3aed' }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#6d28d9'}
-                  onMouseLeave={e => e.currentTarget.style.background = '#7c3aed'}>
+                >
                   <RefreshCw size={12} /> Regenerate
-                </button>
-                <button
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
                   onClick={() => setPhase('idle')}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all"
-                  style={{ background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ede9fe' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#ede9fe'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = '#f5f3ff'; }}>
+                >
                   <ArrowLeft size={12} /> Back to Bidders
-                </button>
+                </Button>
               </div>
             </div>
             <RankingTable rankings={rankings} />

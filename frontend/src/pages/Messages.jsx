@@ -4,53 +4,57 @@ import { apiService } from '../services/api';
 import {
   Mail, Building2, Clock, CheckCheck, Inbox,
   ChevronDown, ChevronUp, AlertCircle, KeyRound,
-  RefreshCw, Send, Copy, Check, UserPlus, ShieldCheck,
+  RefreshCw, Send, Copy, Check, UserPlus, ShieldCheck, Loader2,
 } from 'lucide-react';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { Skeleton } from '../components/ui/skeleton';
+import { cn } from '../lib/utils';
 
-const SUBJECT_COLORS = {
-  'Supplier Registration': { color: '#7c3aed', bg: '#f5f3ff', border: '#ede9fe' },
-  'Tender Enquiry':        { color: '#2563eb', bg: '#eff6ff', border: '#dbeafe' },
-  'Proposal Submission':   { color: '#059669', bg: '#f0fdf4', border: '#dcfce7' },
-  'Evaluation & Results':  { color: '#d97706', bg: '#fffbeb', border: '#fef3c7' },
-  'Technical Support':     { color: '#dc2626', bg: '#fef2f2', border: '#fee2e2' },
-  'Other':                 { color: '#64748b', bg: '#f8fafc', border: '#f1f5f9' },
+const SUBJECT_TONES = {
+  'Supplier Registration': 'text-primary bg-primary/10 border-primary/20',
+  'Tender Enquiry': 'text-blue-600 bg-blue-50 border-blue-200',
+  'Proposal Submission': 'text-emerald-600 bg-emerald-50 border-emerald-200',
+  'Evaluation & Results': 'text-amber-600 bg-amber-50 border-amber-200',
+  'Technical Support': 'text-red-600 bg-red-50 border-red-200',
+  'Other': 'text-muted-foreground bg-muted border-border',
 };
-const DEFAULT_COLOR = { color: '#7c3aed', bg: '#f5f3ff', border: '#ede9fe' };
+const DEFAULT_TONE = SUBJECT_TONES['Other'];
 
 const timeAgo = (iso) => {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
-  if (m < 1)  return 'just now';
+  if (m < 1) return 'just now';
   if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h ago`;
   const d = Math.floor(h / 24);
-  if (d < 7)  return `${d}d ago`;
+  if (d < 7) return `${d}d ago`;
   return new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
 };
 
 const generatePassword = () => {
-  const upper  = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-  const lower  = 'abcdefghjkmnpqrstuvwxyz';
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lower = 'abcdefghjkmnpqrstuvwxyz';
   const digits = '23456789';
   const special = '@#$!';
   const all = upper + lower + digits + special;
   let pwd = upper[Math.floor(Math.random() * upper.length)]
-           + lower[Math.floor(Math.random() * lower.length)]
-           + digits[Math.floor(Math.random() * digits.length)]
-           + special[Math.floor(Math.random() * special.length)];
+    + lower[Math.floor(Math.random() * lower.length)]
+    + digits[Math.floor(Math.random() * digits.length)]
+    + special[Math.floor(Math.random() * special.length)];
   for (let i = 4; i < 10; i++) pwd += all[Math.floor(Math.random() * all.length)];
   return pwd.split('').sort(() => Math.random() - 0.5).join('');
 };
 
 const buildMailto = (msg, password) => {
   const loginUrl = `${window.location.origin}/login`;
-  const subject = `NPC TenderHub — Your Portal Access Credentials`;
+  const subject = `TenderRank — Your Portal Access Credentials`;
   const body = `Dear ${msg.name},
 
 Thank you for reaching out to the National Procurement Commission (NPC).
 
-We have reviewed your request and are pleased to grant you access to the NPC TenderHub Portal as a Procurement Officer.
+We have reviewed your request and are pleased to grant you access to the TenderRank Portal as a Procurement Officer.
 
 Your login credentials are below:
 
@@ -77,9 +81,8 @@ Federal Government of Somalia`;
 
 /* ── Credentials panel ─────────────────────────────────────── */
 const CredentialsPanel = ({ msg }) => {
-  const [password, setPassword]     = useState(() => generatePassword());
-  const [copied, setCopied]         = useState(false);
-  const [pwdFocused, setPwdFocused] = useState(false);
+  const [password, setPassword] = useState(() => generatePassword());
+  const [copied, setCopied] = useState(false);
   // 'idle' | 'creating' | 'created' | 'exists' | 'error'
   const [accountState, setAccountState] = useState('idle');
   const [accountError, setAccountError] = useState('');
@@ -93,7 +96,7 @@ const CredentialsPanel = ({ msg }) => {
   };
 
   const handleRegenerate = () => {
-    if (accountState === 'created') return; // account already created — don't change password
+    if (accountState === 'created') return;
     setPassword(generatePassword());
     setAccountState('idle');
     setAccountError('');
@@ -126,154 +129,104 @@ const CredentialsPanel = ({ msg }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22 }}
-      style={{ marginTop: 12, background: 'linear-gradient(135deg,#f5f3ff,#eff6ff)',
-        border: '1.5px solid #ddd6fe', borderRadius: 12, padding: '16px 18px' }}
+      className="mt-3 rounded-xl p-[18px] border border-primary/25 bg-gradient-to-br from-primary/10 to-blue-50"
     >
-      <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase',
-        letterSpacing: '0.08em', color: '#7c3aed', marginBottom: 12 }}>
+      <p className="text-[11px] font-extrabold uppercase tracking-wider text-primary mb-3">
         Grant Portal Access
       </p>
 
-      {/* Recipient */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14,
-        fontSize: 12, color: '#475569' }}>
-        <Mail size={12} style={{ color: '#7c3aed', flexShrink: 0 }} />
-        <span>To: <strong style={{ color: '#0f172a' }}>{msg.name}</strong> &lt;{msg.email}&gt;</span>
+      <div className="flex items-center gap-2 mb-3.5 text-xs text-muted-foreground">
+        <Mail size={12} className="text-primary shrink-0" />
+        <span>To: <strong className="text-foreground">{msg.name}</strong> &lt;{msg.email}&gt;</span>
       </div>
 
       {/* ── STEP 1: Create account ── */}
-      <div style={{ marginBottom: 14, padding: '14px 16px', borderRadius: 10,
-        background: canSendEmail ? '#f0fdf4' : 'rgba(255,255,255,0.65)',
-        border: `1.5px solid ${canSendEmail ? '#bbf7d0' : '#e0e7ff'}`,
-        transition: 'all .25s' }}>
+      <div className={cn('mb-3.5 p-3.5 rounded-lg border transition-colors', canSendEmail ? 'bg-success/10 border-success/25' : 'bg-card/70 border-primary/15')}>
 
-        <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
-          letterSpacing: '0.07em', color: canSendEmail ? '#059669' : '#7c3aed', marginBottom: 10 }}>
+        <p className={cn('text-[10px] font-extrabold uppercase tracking-wider mb-2.5', canSendEmail ? 'text-success' : 'text-primary')}>
           {canSendEmail ? '✓ Step 1 — Account created' : 'Step 1 — Create Account'}
         </p>
 
-        {/* Password row */}
-        <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
-          <div style={{
-            flex: 1, display: 'flex', alignItems: 'center', gap: 8,
-            background: pwdFocused ? '#fff' : 'rgba(255,255,255,0.8)',
-            border: `1.5px solid ${pwdFocused ? '#7c3aed' : '#ddd6fe'}`,
-            borderRadius: 9, padding: '0 12px',
-            boxShadow: pwdFocused ? '0 0 0 3px rgba(124,58,237,.08)' : 'none',
-            transition: 'all .18s', opacity: accountState === 'created' ? 0.7 : 1,
-          }}>
-            <KeyRound size={13} style={{ color: '#a78bfa', flexShrink: 0 }} />
+        <div className="flex gap-1.5 mb-2">
+          <div className={cn(
+            'flex-1 flex items-center gap-2 rounded-lg border px-3 transition-colors',
+            'border-primary/25 bg-card/80 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10',
+            accountState === 'created' && 'opacity-70'
+          )}>
+            <KeyRound size={13} className="text-primary shrink-0" />
             <input
               value={password}
               readOnly={accountState === 'created'}
               onChange={e => { setPassword(e.target.value); setAccountState('idle'); }}
-              onFocus={() => setPwdFocused(true)}
-              onBlur={() => setPwdFocused(false)}
-              style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none',
-                fontSize: 13, fontWeight: 700, color: '#0f172a', padding: '10px 0',
-                fontFamily: 'monospace', letterSpacing: '0.05em',
-                cursor: accountState === 'created' ? 'default' : 'text' }}
+              className="flex-1 bg-transparent border-none outline-none text-[13px] font-bold text-foreground py-2.5 font-mono tracking-wide"
+              style={{ cursor: accountState === 'created' ? 'default' : 'text' }}
             />
           </div>
           <button onClick={handleRegenerate} title="Generate new password"
             disabled={accountState === 'created' || accountState === 'creating'}
-            style={{ padding: '0 11px', borderRadius: 9, border: '1.5px solid #ddd6fe',
-              background: 'rgba(255,255,255,0.7)', cursor: accountState === 'created' ? 'not-allowed' : 'pointer',
-              color: '#7c3aed', display: 'flex', alignItems: 'center', opacity: accountState === 'created' ? 0.4 : 1,
-              transition: 'all .15s' }}
-            onMouseEnter={e => { if (accountState !== 'created') { e.currentTarget.style.background = '#7c3aed'; e.currentTarget.style.color = '#fff'; }}}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.7)'; e.currentTarget.style.color = '#7c3aed'; }}
-          ><RefreshCw size={13} /></button>
+            className="px-2.5 rounded-lg border border-primary/25 bg-card/70 text-primary transition-colors hover:bg-primary hover:text-primary-foreground disabled:opacity-40 disabled:pointer-events-none flex items-center">
+            <RefreshCw size={13} />
+          </button>
           <button onClick={handleCopy} title="Copy password"
-            style={{ padding: '0 11px', borderRadius: 9,
-              border: `1.5px solid ${copied ? '#bbf7d0' : '#ddd6fe'}`,
-              background: copied ? '#dcfce7' : 'rgba(255,255,255,0.7)',
-              cursor: 'pointer', color: copied ? '#059669' : '#7c3aed',
-              display: 'flex', alignItems: 'center', transition: 'all .15s' }}
-          >{copied ? <Check size={13} /> : <Copy size={13} />}</button>
+            className={cn(
+              'px-2.5 rounded-lg border transition-colors flex items-center',
+              copied ? 'border-success/30 bg-success/15 text-success' : 'border-primary/25 bg-card/70 text-primary'
+            )}>
+            {copied ? <Check size={13} /> : <Copy size={13} />}
+          </button>
         </div>
 
-        {/* Error */}
-        {(accountState === 'error') && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12,
-            color: '#dc2626', background: '#fef2f2', border: '1px solid #fecaca',
-            borderRadius: 8, padding: '8px 12px', marginBottom: 8 }}>
+        {accountState === 'error' && (
+          <div className="flex items-center gap-1.5 text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 mb-2">
             <AlertCircle size={12} /> {accountError}
           </div>
         )}
 
-        {/* Already exists warning */}
         {accountState === 'exists' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12,
-            color: '#d97706', background: '#fffbeb', border: '1px solid #fde68a',
-            borderRadius: 8, padding: '8px 12px', marginBottom: 8 }}>
+          <div className="flex items-center gap-1.5 text-xs text-warning bg-warning/10 border border-warning/25 rounded-lg px-3 py-2 mb-2">
             <AlertCircle size={12} /> {accountError} You can still send the email with this password if you reset it manually.
           </div>
         )}
 
-        {/* Create button */}
         {!canSendEmail && (
-          <button onClick={handleCreateAccount}
+          <Button
+            onClick={handleCreateAccount}
             disabled={!password.trim() || accountState === 'creating'}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-              width: '100%', padding: '10px', borderRadius: 9, border: 'none',
-              cursor: !password.trim() || accountState === 'creating' ? 'not-allowed' : 'pointer',
-              fontFamily: 'inherit', fontSize: 13, fontWeight: 700, transition: 'opacity .15s',
-              background: 'linear-gradient(135deg,#7c3aed,#2563eb)', color: '#fff',
-              opacity: !password.trim() || accountState === 'creating' ? 0.6 : 1,
-              boxShadow: '0 4px 12px rgba(124,58,237,.25)' }}
-            onMouseEnter={e => { if (password.trim() && accountState !== 'creating') e.currentTarget.style.opacity = '0.85'; }}
-            onMouseLeave={e => e.currentTarget.style.opacity = (!password.trim() || accountState === 'creating') ? '0.6' : '1'}
+            className="w-full"
           >
             {accountState === 'creating'
-              ? <><span style={{ width: 13, height: 13, borderRadius: '50%', border: '2px solid rgba(255,255,255,.3)',
-                  borderTopColor: '#fff', animation: 'spin .7s linear infinite', display: 'inline-block' }} /> Creating…</>
+              ? <><Loader2 size={13} className="animate-spin" /> Creating…</>
               : <><UserPlus size={13} /> Create Procurement Officer Account</>}
-          </button>
+          </Button>
         )}
 
-        {/* Created success */}
         {accountState === 'created' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px',
-            background: '#dcfce7', border: '1px solid #bbf7d0', borderRadius: 9,
-            fontSize: 12, fontWeight: 700, color: '#059669' }}>
+          <div className="flex items-center gap-2 px-3 py-2.5 bg-success/15 border border-success/25 rounded-lg text-xs font-bold text-success">
             <ShieldCheck size={14} /> Account created — {msg.email} can now log in.
           </div>
         )}
       </div>
 
       {/* ── STEP 2: Send email ── */}
-      <div style={{ padding: '14px 16px', borderRadius: 10,
-        background: canSendEmail ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.35)',
-        border: `1.5px solid ${canSendEmail ? '#e0e7ff' : '#ede9fe'}`,
-        opacity: canSendEmail ? 1 : 0.5, transition: 'all .25s' }}>
+      <div className={cn('p-3.5 rounded-lg border transition-opacity', canSendEmail ? 'bg-card/70 border-primary/15 opacity-100' : 'bg-card/40 border-primary/10 opacity-50')}>
 
-        <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
-          letterSpacing: '0.07em', color: '#7c3aed', marginBottom: 10 }}>
+        <p className="text-[10px] font-extrabold uppercase tracking-wider text-primary mb-2.5">
           Step 2 — Send Credentials by Email
         </p>
 
-        {/* Preview */}
-        <div style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid #e0e7ff',
-          borderRadius: 9, padding: '10px 14px', marginBottom: 12,
-          fontSize: 11.5, color: '#475569', lineHeight: 1.75, fontFamily: 'monospace' }}>
-          Email: <strong style={{ color: '#0f172a' }}>{msg.email}</strong><br />
-          Temp Password: <strong style={{ color: '#7c3aed' }}>{password || '—'}</strong><br />
+        <div className="bg-card/70 border border-primary/15 rounded-lg px-3.5 py-2.5 mb-3 text-[11.5px] text-muted-foreground leading-relaxed font-mono">
+          Email: <strong className="text-foreground">{msg.email}</strong><br />
+          Temp Password: <strong className="text-primary">{password || '—'}</strong><br />
           First login → forced password change
         </div>
 
         <a
           href={canSendEmail ? buildMailto(msg, password.trim()) : undefined}
           onClick={e => { if (!canSendEmail) e.preventDefault(); }}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-            padding: '11px 0', borderRadius: 10, textDecoration: 'none',
-            background: canSendEmail ? 'linear-gradient(135deg,#059669,#0d9488)' : '#e2e8f0',
-            color: canSendEmail ? '#fff' : '#94a3b8',
-            fontSize: 13, fontWeight: 700,
-            boxShadow: canSendEmail ? '0 4px 14px rgba(5,150,105,.25)' : 'none',
-            transition: 'opacity .15s', cursor: canSendEmail ? 'pointer' : 'not-allowed' }}
-          onMouseEnter={e => { if (canSendEmail) e.currentTarget.style.opacity = '0.88'; }}
-          onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+          className={cn(
+            'flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-bold no-underline transition-opacity',
+            canSendEmail ? 'bg-gradient-to-br from-emerald-600 to-teal-600 text-white hover:opacity-90 cursor-pointer' : 'bg-muted text-muted-foreground cursor-not-allowed'
+          )}
         >
           <Send size={13} />
           {canSendEmail ? 'Open in Email Client' : 'Create account first ↑'}
@@ -285,9 +238,9 @@ const CredentialsPanel = ({ msg }) => {
 
 /* ── Message card ──────────────────────────────────────────── */
 const MessageCard = ({ msg, onRead }) => {
-  const [open, setOpen]             = useState(false);
-  const [showCreds, setShowCreds]   = useState(false);
-  const sc = SUBJECT_COLORS[msg.subject] || DEFAULT_COLOR;
+  const [open, setOpen] = useState(false);
+  const [showCreds, setShowCreds] = useState(false);
+  const tone = SUBJECT_TONES[msg.subject] || DEFAULT_TONE;
 
   const handleOpen = () => {
     setOpen(v => !v);
@@ -297,122 +250,84 @@ const MessageCard = ({ msg, onRead }) => {
 
   return (
     <motion.div layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-      style={{
-        background: '#fff',
-        border: `1.5px solid ${open ? sc.border : msg.is_read ? '#f1f5f9' : '#ddd6fe'}`,
-        borderRadius: 14, overflow: 'hidden',
-        boxShadow: open ? '0 4px 24px rgba(15,23,42,.07)' : '0 1px 4px rgba(15,23,42,.04)',
-        transition: 'border-color .2s, box-shadow .2s',
-      }}>
+      className={cn(
+        'bg-card rounded-xl overflow-hidden border transition-shadow',
+        open ? cn('shadow-md', tone.split(' ')[2]) : msg.is_read ? 'border-border shadow-sm' : 'border-primary/25 shadow-sm'
+      )}>
 
-      {/* Header row */}
-      <button onClick={handleOpen} style={{
-        width: '100%', display: 'flex', alignItems: 'center', gap: 14,
-        padding: '14px 18px', background: 'none', border: 'none',
-        cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit',
-      }}>
-        <div style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
-          background: msg.is_read ? 'transparent' : '#7c3aed',
-          border: msg.is_read ? '1px solid #e2e8f0' : 'none' }} />
+      <button onClick={handleOpen} className="w-full flex items-center gap-3.5 px-[18px] py-3.5 bg-transparent border-none cursor-pointer text-left">
+        <div className={cn('w-2 h-2 rounded-full shrink-0', msg.is_read ? 'border border-border' : 'bg-primary')} />
 
-        <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-          background: sc.bg, border: `1px solid ${sc.border}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 13, fontWeight: 800, color: sc.color }}>
+        <div className={cn('w-9 h-9 rounded-lg shrink-0 flex items-center justify-center text-[13px] font-extrabold border', tone)}>
           {msg.name.charAt(0).toUpperCase()}
         </div>
 
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-            <span style={{ fontSize: 13, fontWeight: msg.is_read ? 600 : 700, color: '#0f172a' }}>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className={cn('text-[13px] text-foreground', msg.is_read ? 'font-semibold' : 'font-bold')}>
               {msg.name}
             </span>
             {msg.company && (
-              <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>· {msg.company}</span>
+              <span className="text-[11px] text-muted-foreground font-medium">· {msg.company}</span>
             )}
           </div>
-          <p style={{ fontSize: 12, color: msg.is_read ? '#94a3b8' : '#475569',
-            fontWeight: msg.is_read ? 400 : 500, margin: 0,
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <p className={cn('text-xs m-0 whitespace-nowrap overflow-hidden text-ellipsis', msg.is_read ? 'text-muted-foreground font-normal' : 'text-foreground/70 font-medium')}>
             {msg.message.slice(0, 90)}{msg.message.length > 90 ? '…' : ''}
           </p>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
-          <span style={{ fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: 99,
-            background: sc.bg, color: sc.color, border: `1px solid ${sc.border}` }}>
-            {msg.subject}
-          </span>
-          <span style={{ fontSize: 10, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 3 }}>
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
+          <Badge className={tone}>{msg.subject}</Badge>
+          <span className="text-[10px] text-muted-foreground flex items-center gap-1">
             <Clock size={9} /> {timeAgo(msg.created_at)}
           </span>
         </div>
 
-        {open ? <ChevronUp size={14} style={{ color: '#94a3b8', flexShrink: 0 }} />
-               : <ChevronDown size={14} style={{ color: '#94a3b8', flexShrink: 0 }} />}
+        {open ? <ChevronUp size={14} className="text-muted-foreground shrink-0" /> : <ChevronDown size={14} className="text-muted-foreground shrink-0" />}
       </button>
 
-      {/* Expanded body */}
       <AnimatePresence initial={false}>
         {open && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }}
-            style={{ overflow: 'hidden' }}>
-            <div style={{ padding: '0 18px 18px 18px', borderTop: `1px solid ${sc.border}` }}>
+            exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
+            <div className={cn('px-[18px] pb-[18px] border-t', tone.split(' ')[2])}>
 
-              {/* Meta row */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, padding: '14px 0 12px' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#64748b' }}>
-                  <Mail size={12} style={{ color: sc.color }} /> {msg.email}
+              <div className="flex flex-wrap gap-3 py-3.5">
+                <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Mail size={12} className="text-primary" /> {msg.email}
                 </span>
                 {msg.company && (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#64748b' }}>
-                    <Building2 size={12} style={{ color: sc.color }} /> {msg.company}
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Building2 size={12} className="text-primary" /> {msg.company}
                   </span>
                 )}
-                <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#64748b' }}>
-                  <Clock size={12} style={{ color: sc.color }} />
+                <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Clock size={12} className="text-primary" />
                   {new Date(msg.created_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
                 </span>
               </div>
 
-              {/* Full message */}
-              <div style={{ background: '#f8fafc', borderRadius: 10, padding: '14px 16px',
-                fontSize: 13.5, color: '#334155', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
+              <div className="bg-muted/40 rounded-lg px-4 py-3.5 text-[13.5px] text-foreground/80 leading-relaxed whitespace-pre-wrap">
                 {msg.message}
               </div>
 
-              {/* Action buttons */}
-              <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
+              <div className="flex gap-2 mt-3.5 flex-wrap">
                 <a href={`mailto:${msg.email}?subject=Re: ${encodeURIComponent(msg.subject)}`}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6,
-                    fontSize: 12, fontWeight: 700, padding: '8px 16px', borderRadius: 9,
-                    background: sc.bg, color: sc.color, border: `1px solid ${sc.border}`,
-                    textDecoration: 'none', transition: 'all .15s' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = sc.color; e.currentTarget.style.color = '#fff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = sc.bg; e.currentTarget.style.color = sc.color; }}>
+                  className={cn('inline-flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-lg no-underline border transition-colors hover:brightness-95', tone)}>
                   <Mail size={12} /> Reply
                 </a>
 
-                <button
+                <Button
+                  size="sm"
+                  variant={showCreds ? 'default' : 'secondary'}
                   onClick={() => setShowCreds(v => !v)}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6,
-                    fontSize: 12, fontWeight: 700, padding: '8px 16px', borderRadius: 9,
-                    cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
-                    background: showCreds ? '#7c3aed' : '#f5f3ff',
-                    color: showCreds ? '#fff' : '#7c3aed',
-                    border: `1px solid ${showCreds ? '#7c3aed' : '#ede9fe'}`,
-                    boxShadow: showCreds ? '0 4px 12px rgba(124,58,237,.25)' : 'none' }}
-                  onMouseEnter={e => { if (!showCreds) { e.currentTarget.style.background = '#7c3aed'; e.currentTarget.style.color = '#fff'; }}}
-                  onMouseLeave={e => { if (!showCreds) { e.currentTarget.style.background = '#f5f3ff'; e.currentTarget.style.color = '#7c3aed'; }}}
                 >
                   <KeyRound size={12} /> {showCreds ? 'Hide Credentials' : 'Send Credentials'}
-                </button>
+                </Button>
               </div>
 
-              {/* Credentials panel */}
               <AnimatePresence>
-                {showCreds && <CredentialsPanel key="creds" msg={msg} sc={sc} />}
+                {showCreds && <CredentialsPanel key="creds" msg={msg} />}
               </AnimatePresence>
             </div>
           </motion.div>
@@ -425,10 +340,10 @@ const MessageCard = ({ msg, onRead }) => {
 /* ── Main page ─────────────────────────────────────────────── */
 const Messages = () => {
   const [messages, setMessages] = useState([]);
-  const [unread, setUnread]     = useState(0);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState('');
-  const [filter, setFilter]     = useState('all');
+  const [unread, setUnread] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [filter, setFilter] = useState('all');
 
   useEffect(() => {
     apiService.getMessages()
@@ -460,46 +375,37 @@ const Messages = () => {
 
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.38 }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
-            <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-              letterSpacing: '0.14em', color: '#7c3aed', marginBottom: 4 }}>Super Admin</p>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>
+            <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-primary mb-1">Super Admin</p>
+            <h1 className="text-[22px] font-extrabold text-foreground m-0 tracking-tight">
               Contact Messages
             </h1>
-            <p style={{ fontSize: 13, color: '#94a3b8', marginTop: 3 }}>
+            <p className="text-[13px] text-muted-foreground mt-1">
               Enquiries submitted via the public contact form.
             </p>
           </div>
           {unread > 0 && (
-            <button onClick={handleMarkAllRead}
-              style={{ display: 'flex', alignItems: 'center', gap: 6,
-                fontSize: 12, fontWeight: 700, padding: '9px 16px', borderRadius: 10,
-                background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ede9fe',
-                cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s' }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#7c3aed'; e.currentTarget.style.color = '#fff'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#f5f3ff'; e.currentTarget.style.color = '#7c3aed'; }}>
+            <Button variant="secondary" onClick={handleMarkAllRead}>
               <CheckCheck size={13} /> Mark all read
-            </button>
+            </Button>
           )}
         </div>
       </motion.div>
 
       {/* Filter tabs */}
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div className="flex gap-2">
         {[
-          { val: 'all',    label: `All (${messages.length})` },
+          { val: 'all', label: `All (${messages.length})` },
           { val: 'unread', label: `Unread (${unread})` },
         ].map(({ val, label }) => {
           const active = filter === val;
           return (
             <button key={val} onClick={() => setFilter(val)}
-              style={{ fontSize: 12, fontWeight: 700, padding: '7px 16px', borderRadius: 10,
-                cursor: 'pointer', fontFamily: 'inherit', transition: 'all .15s',
-                background: active ? '#7c3aed' : '#fff',
-                color: active ? '#fff' : '#64748b',
-                border: `1.5px solid ${active ? '#7c3aed' : '#e2e8f0'}`,
-                boxShadow: active ? '0 4px 12px rgba(124,58,237,.25)' : 'none' }}>
+              className={cn(
+                'text-xs font-bold px-4 py-1.5 rounded-lg border transition-colors',
+                active ? 'bg-primary text-primary-foreground border-primary shadow-sm' : 'bg-card text-muted-foreground border-border hover:bg-accent'
+              )}>
               {label}
             </button>
           );
@@ -508,40 +414,32 @@ const Messages = () => {
 
       {/* List */}
       {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {[...Array(4)].map((_, i) => (
-            <div key={i} style={{ height: 72, borderRadius: 14, background: '#fff',
-              border: '1.5px solid #f1f5f9', animation: 'pulse 1.5s ease-in-out infinite' }} />
-          ))}
+        <div className="flex flex-col gap-2.5">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-[72px] rounded-xl bg-card border border-border" />)}
         </div>
       ) : error ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 20px',
-          background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12,
-          color: '#dc2626', fontSize: 13 }}>
+        <div className="flex items-center gap-2.5 px-5 py-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-[13px]">
           <AlertCircle size={15} /> {error}
         </div>
       ) : visible.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '64px 0' }}>
-          <div style={{ width: 52, height: 52, borderRadius: 14, background: '#f5f3ff',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
-            <Inbox size={22} style={{ color: '#7c3aed' }} />
+        <div className="text-center py-16">
+          <div className="w-[52px] h-[52px] rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3.5">
+            <Inbox size={22} className="text-primary" />
           </div>
-          <p style={{ fontWeight: 700, color: '#0f172a', marginBottom: 4 }}>
+          <p className="font-bold text-foreground mb-1">
             {filter === 'unread' ? 'No unread messages' : 'No messages yet'}
           </p>
-          <p style={{ fontSize: 13, color: '#94a3b8' }}>
+          <p className="text-[13px] text-muted-foreground">
             {filter === 'unread' ? 'All caught up!' : 'Messages from the contact form will appear here.'}
           </p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="flex flex-col gap-2">
           {visible.map(msg => (
             <MessageCard key={msg.id} msg={msg} onRead={handleRead} />
           ))}
         </div>
       )}
-
-      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }`}</style>
     </div>
   );
 };

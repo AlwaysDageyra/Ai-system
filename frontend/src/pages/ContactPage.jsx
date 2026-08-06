@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Phone, MapPin, Send, CheckCircle2, Clock, FileText, ChevronDown, MessageSquare, ArrowRight } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, CheckCircle2, Clock, ChevronDown, MessageSquare, Loader2 } from 'lucide-react';
 import { apiService } from '../services/api';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Textarea } from '../components/ui/textarea';
+import { Label } from '../components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { cn } from '../lib/utils';
 
 const FadeUp = ({ children, delay = 0, className = '' }) => (
   <motion.div
@@ -23,45 +29,30 @@ const FAQS = [
   { q: 'What document formats are accepted?', a: 'We accept PDF and Microsoft Word documents (.pdf, .doc, .docx). Maximum file size is 50MB per submission.' },
 ];
 
-const inputStyle = {
-  width: '100%', padding: '11px 14px', borderRadius: 10,
-  background: '#f8fafc', border: '1.5px solid #e2e8f0',
-  color: '#0f172a', fontSize: 14, outline: 'none',
-  transition: 'all .2s', fontFamily: 'inherit',
-};
+const CONTACT_METHODS = [
+  { icon: Mail, label: 'Email', val: 'procurement@npc.gov.so', tone: 'bg-primary/10 text-primary' },
+  { icon: Phone, label: 'Phone', val: '+252 61 234 5678', tone: 'bg-blue-50 text-blue-600' },
+  { icon: MapPin, label: 'Address', val: 'Villa Somalia Complex, Mogadishu', tone: 'bg-emerald-50 text-emerald-600' },
+];
 
-function Field({ as: Tag = 'input', ...props }) {
-  const [focused, setFocused] = useState(false);
-  return (
-    <Tag
-      {...props}
-      style={{
-        ...inputStyle,
-        ...(focused ? { borderColor: '#7c3aed', boxShadow: '0 0 0 3px rgba(124,58,237,.1)', background: '#fff' } : {}),
-        ...(props.style || {}),
-      }}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
-    />
-  );
-}
+const OFFICE_HOURS = [
+  { day: 'Mon – Thu', hrs: '8:00 AM – 5:00 PM', open: true },
+  { day: 'Friday', hrs: '8:00 AM – 12:30 PM', open: true },
+  { day: 'Sat – Sun', hrs: 'Closed', open: false },
+];
 
-function InputLabel({ children }) {
-  return (
-    <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>
-      {children}
-    </label>
-  );
-}
+const SUBJECTS = [
+  'Supplier Registration', 'Tender Enquiry', 'Proposal Submission',
+  'Evaluation & Results', 'Technical Support', 'Other',
+];
 
 const ContactPage = () => {
   const [form, setForm] = useState({ name: '', email: '', company: '', subject: '', message: '' });
   const [status, setStatus] = useState('idle');
   const [openFaq, setOpenFaq] = useState(null);
+  const [submitError, setSubmitError] = useState('');
 
   const handleChange = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
-
-  const [submitError, setSubmitError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -77,74 +68,57 @@ const ContactPage = () => {
   };
 
   return (
-    <div style={{ background: '#f8fafc', minHeight: '100vh' }}>
+    <div className="bg-background min-h-screen">
 
       {/* ── Hero / Main section ── */}
-      <section style={{ background: '#fff', borderBottom: '1px solid #f1f5f9' }}>
+      <section className="bg-card border-b border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-start">
 
             {/* Left — info */}
             <div>
               <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 11, fontWeight: 700,
-                  color: '#7c3aed', background: '#ede9fe', border: '1px solid #ddd6fe',
-                  padding: '5px 12px', borderRadius: 999, marginBottom: 20 }}>
+                <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-primary bg-primary/10 border border-primary/20 px-3 py-1.5 rounded-full mb-5">
                   <MessageSquare size={11} /> Get in Touch
                 </div>
 
-                <h1 style={{ fontSize: 40, fontWeight: 800, color: '#0f172a', lineHeight: 1.15,
-                  letterSpacing: '-0.03em', marginBottom: 16 }}>
+                <h1 className="text-4xl font-extrabold text-foreground leading-tight tracking-tight mb-4">
                   Contact the<br />
-                  <span style={{ color: '#7c3aed' }}>NPC Team</span>
+                  <span className="text-primary">NPC Team</span>
                 </h1>
 
-                <p style={{ fontSize: 15, color: '#64748b', lineHeight: 1.7, marginBottom: 32, maxWidth: 400 }}>
+                <p className="text-[15px] text-muted-foreground leading-relaxed mb-8 max-w-[400px]">
                   Questions about a tender, submission process, or your application? Our team responds within 1 business day.
                 </p>
 
                 {/* Contact methods */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {[
-                    { icon: Mail,   label: 'Email',   val: 'procurement@npc.gov.so', bg: '#ede9fe', ic: '#7c3aed' },
-                    { icon: Phone,  label: 'Phone',   val: '+252 61 234 5678',        bg: '#dbeafe', ic: '#2563eb' },
-                    { icon: MapPin, label: 'Address', val: 'Villa Somalia Complex, Mogadishu', bg: '#dcfce7', ic: '#059669' },
-                  ].map(({ icon: Icon, label, val, bg, ic }) => (
-                    <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 14,
-                      background: '#fff', border: '1.5px solid #f1f5f9', borderRadius: 14,
-                      padding: '12px 16px', boxShadow: '0 2px 8px rgba(15,23,42,.04)' }}>
-                      <div style={{ width: 40, height: 40, borderRadius: 10, background: bg,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <Icon size={17} style={{ color: ic }} />
+                <div className="flex flex-col gap-3">
+                  {CONTACT_METHODS.map(({ icon: Icon, label, val, tone }) => (
+                    <div key={label} className="flex items-center gap-3.5 bg-card border border-border rounded-xl px-4 py-3 shadow-sm">
+                      <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0', tone)}>
+                        <Icon size={17} />
                       </div>
                       <div>
-                        <p style={{ fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 2 }}>{label}</p>
-                        <p style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>{val}</p>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">{label}</p>
+                        <p className="text-[13px] font-semibold text-foreground">{val}</p>
                       </div>
                     </div>
                   ))}
                 </div>
 
                 {/* Office hours */}
-                <div style={{ marginTop: 20, background: '#fef9c3', border: '1px solid #fde68a', borderRadius: 14, padding: '16px 20px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                    <div style={{ width: 34, height: 34, borderRadius: 9, background: '#fff',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      boxShadow: '0 1px 4px rgba(0,0,0,.06)' }}>
-                      <Clock size={15} style={{ color: '#d97706' }} />
+                <div className="mt-5 bg-amber-50 border border-amber-200 rounded-xl px-5 py-4">
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <div className="w-[34px] h-[34px] rounded-lg bg-card flex items-center justify-center shadow-sm">
+                      <Clock size={15} className="text-amber-600" />
                     </div>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>Office Hours</p>
+                    <p className="text-[13px] font-bold text-foreground">Office Hours</p>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    {[
-                      { day: 'Mon – Thu', hrs: '8:00 AM – 5:00 PM', open: true },
-                      { day: 'Friday',    hrs: '8:00 AM – 12:30 PM', open: true },
-                      { day: 'Sat – Sun', hrs: 'Closed', open: false },
-                    ].map(({ day, hrs, open }) => (
-                      <div key={day} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        padding: '6px 0', borderBottom: '1px solid rgba(217,119,6,.12)' }}>
-                        <span style={{ fontSize: 12, color: '#92400e' }}>{day}</span>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: open ? '#d97706' : '#a8a29e' }}>{hrs}</span>
+                  <div className="flex flex-col gap-1">
+                    {OFFICE_HOURS.map(({ day, hrs, open }) => (
+                      <div key={day} className="flex justify-between items-center py-1.5 border-b border-amber-200/50 last:border-0">
+                        <span className="text-xs text-amber-900">{day}</span>
+                        <span className={cn('text-xs font-bold', open ? 'text-amber-600' : 'text-amber-900/40')}>{hrs}</span>
                       </div>
                     ))}
                   </div>
@@ -154,87 +128,73 @@ const ContactPage = () => {
 
             {/* Right — form */}
             <FadeUp delay={0.08}>
-              <div style={{ background: '#fff', border: '1.5px solid #f1f5f9', borderRadius: 20,
-                boxShadow: '0 8px 40px rgba(15,23,42,.08)', overflow: 'hidden' }}>
+              <div className="bg-card border border-border rounded-2xl shadow-lg overflow-hidden">
 
-                <div style={{ padding: '20px 28px', background: 'linear-gradient(135deg, #ede9fe, #dbeafe)',
-                  borderBottom: '1px solid #e0e7ff' }}>
-                  <p style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', margin: 0 }}>Send a message</p>
-                  <p style={{ fontSize: 12, color: '#475569', margin: '4px 0 0' }}>We'll get back to you within 1 business day.</p>
+                <div className="px-7 py-5 bg-gradient-to-br from-primary/10 to-blue-100 border-b border-border">
+                  <p className="text-[15px] font-bold text-foreground m-0">Send a message</p>
+                  <p className="text-xs text-muted-foreground mt-1 m-0">We'll get back to you within 1 business day.</p>
                 </div>
 
-                <div style={{ padding: '24px 28px' }}>
+                <div className="px-7 py-6">
                   <AnimatePresence mode="wait">
                     {status === 'success' ? (
                       <motion.div key="ok" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 0', textAlign: 'center' }}>
-                        <div style={{ width: 60, height: 60, borderRadius: 16, background: '#dcfce7',
-                          border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-                          <CheckCircle2 size={26} style={{ color: '#059669' }} />
+                        className="flex flex-col items-center py-10 text-center">
+                        <div className="w-[60px] h-[60px] rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center mb-4">
+                          <CheckCircle2 size={26} className="text-emerald-600" />
                         </div>
-                        <p style={{ fontSize: 16, fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>Message sent!</p>
-                        <p style={{ fontSize: 13, color: '#64748b', maxWidth: 260 }}>Our team will reply within 1 business day.</p>
-                        <button onClick={() => { setStatus('idle'); setForm({ name: '', email: '', company: '', subject: '', message: '' }); }}
-                          style={{ marginTop: 20, fontSize: 12, fontWeight: 700, padding: '9px 20px', borderRadius: 10,
-                            background: '#ede9fe', color: '#7c3aed', border: '1px solid #ddd6fe', cursor: 'pointer',
-                            transition: 'all .15s', fontFamily: 'inherit' }}
-                          onMouseEnter={e => { e.currentTarget.style.background = '#7c3aed'; e.currentTarget.style.color = '#fff'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = '#ede9fe'; e.currentTarget.style.color = '#7c3aed'; }}>
+                        <p className="text-base font-bold text-foreground mb-2">Message sent!</p>
+                        <p className="text-[13px] text-muted-foreground max-w-[260px]">Our team will reply within 1 business day.</p>
+                        <Button
+                          variant="secondary"
+                          className="mt-5"
+                          onClick={() => { setStatus('idle'); setForm({ name: '', email: '', company: '', subject: '', message: '' }); }}
+                        >
                           Send another →
-                        </button>
+                        </Button>
                       </motion.div>
                     ) : (
                       <motion.form key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                        onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                        onSubmit={handleSubmit} className="flex flex-col gap-4">
+                        <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <InputLabel>Full Name *</InputLabel>
-                            <Field name="name" required value={form.name} onChange={handleChange} placeholder="Your name" />
+                            <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Full Name *</Label>
+                            <Input name="name" required value={form.name} onChange={handleChange} placeholder="Your name" />
                           </div>
                           <div>
-                            <InputLabel>Email *</InputLabel>
-                            <Field name="email" type="email" required value={form.email} onChange={handleChange} placeholder="you@company.so" />
+                            <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Email *</Label>
+                            <Input name="email" type="email" required value={form.email} onChange={handleChange} placeholder="you@company.so" />
                           </div>
                         </div>
                         <div>
-                          <InputLabel>Company / Organization</InputLabel>
-                          <Field name="company" value={form.company} onChange={handleChange} placeholder="Your company name" />
+                          <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Company / Organization</Label>
+                          <Input name="company" value={form.company} onChange={handleChange} placeholder="Your company name" />
                         </div>
                         <div>
-                          <InputLabel>Subject *</InputLabel>
-                          <Field as="select" name="subject" required value={form.subject} onChange={handleChange}
-                            style={{ appearance: 'none', cursor: 'pointer' }}>
-                            <option value="">Select a subject…</option>
-                            <option>Supplier Registration</option>
-                            <option>Tender Enquiry</option>
-                            <option>Proposal Submission</option>
-                            <option>Evaluation & Results</option>
-                            <option>Technical Support</option>
-                            <option>Other</option>
-                          </Field>
+                          <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Subject *</Label>
+                          <Select value={form.subject} onValueChange={(v) => setForm(f => ({ ...f, subject: v }))} required>
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Select a subject…" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div>
-                          <InputLabel>Message *</InputLabel>
-                          <Field as="textarea" name="message" required rows={4} value={form.message}
-                            onChange={handleChange} placeholder="Describe your enquiry…"
-                            style={{ resize: 'vertical', minHeight: 100 }} />
+                          <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Message *</Label>
+                          <Textarea name="message" required rows={4} value={form.message} onChange={handleChange} placeholder="Describe your enquiry…" className="resize-y" />
                         </div>
                         {submitError && (
-                          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626',
-                            fontSize: 13, fontWeight: 500, padding: '10px 14px', borderRadius: 9 }}>
+                          <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium px-3.5 py-2.5 rounded-lg">
                             {submitError}
                           </div>
                         )}
-                        <button type="submit" disabled={status === 'sending'}
-                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                            padding: '13px', borderRadius: 11, border: 'none', cursor: status === 'sending' ? 'not-allowed' : 'pointer',
-                            background: 'linear-gradient(135deg, #7c3aed, #2563eb)', color: '#fff',
-                            fontSize: 14, fontWeight: 700, opacity: status === 'sending' ? 0.65 : 1,
-                            boxShadow: '0 4px 16px rgba(124,58,237,.3)', transition: 'opacity .15s', fontFamily: 'inherit' }}>
+                        <Button type="submit" disabled={status === 'sending'} size="lg" className="w-full">
                           {status === 'sending'
-                            ? <><div style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', animation: 'spin .7s linear infinite' }} /> Sending…</>
+                            ? <><Loader2 size={14} className="animate-spin" /> Sending…</>
                             : <><Send size={14} /> Send Message</>}
-                        </button>
+                        </Button>
                       </motion.form>
                     )}
                   </AnimatePresence>
@@ -248,55 +208,43 @@ const ContactPage = () => {
       {/* ── FAQ ── */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <FadeUp className="text-center mb-10">
-          <span style={{ display: 'inline-block', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
-            textTransform: 'uppercase', background: '#ede9fe', color: '#7c3aed',
-            border: '1px solid #ddd6fe', padding: '5px 14px', borderRadius: 999, marginBottom: 16 }}>FAQ</span>
-          <h2 style={{ fontSize: 30, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em', marginBottom: 8 }}>
+          <span className="inline-block text-[11px] font-bold tracking-widest uppercase bg-primary/10 text-primary border border-primary/20 px-3.5 py-1.5 rounded-full mb-4">FAQ</span>
+          <h2 className="text-[30px] font-extrabold text-foreground tracking-tight mb-2">
             Frequently Asked Questions
           </h2>
-          <p style={{ fontSize: 14, color: '#64748b' }}>Everything you need to know about the procurement process.</p>
+          <p className="text-sm text-muted-foreground">Everything you need to know about the procurement process.</p>
         </FadeUp>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div className="flex flex-col gap-2.5">
           {FAQS.map(({ q, a }, i) => {
-            const palette = [
-              { accent: '#7c3aed', light: '#ede9fe', border: '#ddd6fe' },
-              { accent: '#2563eb', light: '#dbeafe', border: '#bfdbfe' },
-              { accent: '#d97706', light: '#fef9c3', border: '#fde68a' },
-              { accent: '#059669', light: '#dcfce7', border: '#bbf7d0' },
-              { accent: '#7c3aed', light: '#ede9fe', border: '#ddd6fe' },
-            ][i];
             const isOpen = openFaq === i;
             return (
               <FadeUp key={i} delay={i * 0.04}>
-                <div style={{
-                  background: '#fff', borderRadius: 14, overflow: 'hidden',
-                  border: `1.5px solid ${isOpen ? palette.border : '#f1f5f9'}`,
-                  boxShadow: isOpen ? '0 4px 24px rgba(15,23,42,.07)' : 'none',
-                  transition: 'border-color .2s, box-shadow .2s',
-                }}>
-                  <button onClick={() => setOpenFaq(isOpen ? null : i)}
-                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 14,
-                      padding: '16px 20px', background: 'none', border: 'none', cursor: 'pointer',
-                      textAlign: 'left', fontFamily: 'inherit' }}>
-                    <div style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 12, fontWeight: 800, transition: 'all .2s',
-                      background: isOpen ? palette.accent : palette.light,
-                      color: isOpen ? '#fff' : palette.accent }}>
+                <div className={cn(
+                  'bg-card rounded-xl overflow-hidden border transition-shadow',
+                  isOpen ? 'border-primary/30 shadow-md' : 'border-border'
+                )}>
+                  <button
+                    onClick={() => setOpenFaq(isOpen ? null : i)}
+                    className="w-full flex items-center gap-3.5 px-5 py-4 bg-transparent border-none cursor-pointer text-left"
+                  >
+                    <div className={cn(
+                      'w-7 h-7 rounded-lg shrink-0 flex items-center justify-center text-xs font-extrabold transition-colors',
+                      isOpen ? 'bg-primary text-primary-foreground' : 'bg-primary/10 text-primary'
+                    )}>
                       {i + 1}
                     </div>
-                    <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: '#0f172a' }}>{q}</span>
+                    <span className="flex-1 text-sm font-semibold text-foreground">{q}</span>
                     <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                      <ChevronDown size={16} style={{ color: isOpen ? palette.accent : '#9ca3af' }} />
+                      <ChevronDown size={16} className={isOpen ? 'text-primary' : 'text-muted-foreground'} />
                     </motion.div>
                   </button>
                   <AnimatePresence initial={false}>
                     {isOpen && (
                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} style={{ overflow: 'hidden' }}>
-                        <div style={{ padding: '0 20px 18px 62px', borderTop: `1px solid ${palette.border}` }}>
-                          <p style={{ fontSize: 13.5, lineHeight: 1.7, color: '#64748b', marginTop: 14 }}>{a}</p>
+                        exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
+                        <div className="px-5 pb-[18px] pl-[62px] border-t border-border">
+                          <p className="text-[13.5px] leading-relaxed text-muted-foreground mt-3.5">{a}</p>
                         </div>
                       </motion.div>
                     )}
@@ -307,8 +255,6 @@ const ContactPage = () => {
           })}
         </div>
       </div>
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 };

@@ -1,37 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, Eye, EyeOff, ShieldCheck, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Lock, Eye, EyeOff, ShieldCheck, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
 
 function PwdField({ label, value, onChange, placeholder }) {
-  const [focused, setFocused] = useState(false);
   const [show, setShow] = useState(false);
   return (
     <div>
-      <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#94a3b8',
-        textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>
-        {label}
-      </label>
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        background: focused ? '#fff' : '#f8fafc',
-        border: `1.5px solid ${focused ? '#7c3aed' : '#e2e8f0'}`,
-        borderRadius: 10, padding: '0 14px',
-        boxShadow: focused ? '0 0 0 3px rgba(124,58,237,.08)' : 'none',
-        transition: 'all .18s',
-      }}>
-        <Lock size={14} style={{ color: focused ? '#7c3aed' : '#cbd5e1', flexShrink: 0, transition: 'color .18s' }} />
-        <input
+      <Label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">{label}</Label>
+      <div className="relative">
+        <Lock size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+        <Input
           type={show ? 'text' : 'password'}
           required value={value} onChange={onChange} placeholder={placeholder}
-          onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
-          style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none',
-            color: '#0f172a', fontSize: 14, padding: '12px 0', fontFamily: 'inherit' }}
+          className="pl-10 h-11"
         />
-        <button type="button" onClick={() => setShow(v => !v)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-            color: '#cbd5e1', flexShrink: 0, lineHeight: 0 }}>
+        <button
+          type="button"
+          onClick={() => setShow(v => !v)}
+          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+        >
           {show ? <EyeOff size={14} /> : <Eye size={14} />}
         </button>
       </div>
@@ -42,11 +34,11 @@ function PwdField({ label, value, onChange, placeholder }) {
 const ChangePassword = () => {
   const navigate = useNavigate();
   const [currentPwd, setCurrentPwd] = useState('');
-  const [newPwd, setNewPwd]         = useState('');
+  const [newPwd, setNewPwd] = useState('');
   const [confirmPwd, setConfirmPwd] = useState('');
-  const [error, setError]           = useState('');
-  const [loading, setLoading]       = useState(false);
-  const [done, setDone]             = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -87,73 +79,52 @@ const ChangePassword = () => {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f8fafc',
-      alignItems: 'center', justifyContent: 'center', padding: '40px 20px',
-      fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div className="flex min-h-screen bg-background items-center justify-center px-5 py-10">
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        style={{ width: '100%', maxWidth: 420 }}>
+        className="w-full max-w-[420px]">
 
-        {/* Icon badge */}
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{
-            width: 56, height: 56, borderRadius: 16, margin: '0 auto 16px',
-            background: 'linear-gradient(135deg, #7c3aed, #a78bfa)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 8px 24px rgba(124,58,237,.25)',
-          }}>
-            <ShieldCheck size={24} color="#fff" />
+        <div className="text-center mb-7">
+          <div className="w-14 h-14 rounded-2xl mx-auto mb-4 bg-primary flex items-center justify-center shadow-lg">
+            <ShieldCheck size={24} className="text-primary-foreground" />
           </div>
-          <h1 style={{ margin: '0 0 6px', fontSize: 22, fontWeight: 700, color: '#0f172a', letterSpacing: '-0.02em' }}>
+          <h1 className="m-0 mb-1.5 text-[22px] font-bold text-foreground tracking-tight">
             Set your password
           </h1>
-          <p style={{ margin: 0, fontSize: 13.5, color: '#64748b', lineHeight: 1.55, maxWidth: 300, marginInline: 'auto' }}>
+          <p className="m-0 text-[13.5px] text-muted-foreground leading-relaxed max-w-[300px] mx-auto">
             Your account requires a password change before you can continue.
           </p>
         </div>
 
-        {/* Card */}
-        <div style={{
-          background: '#fff', borderRadius: 16,
-          border: '1px solid #f1f5f9',
-          boxShadow: '0 4px 24px rgba(15,23,42,.07)',
-          padding: '28px 28px',
-        }}>
+        <div className="bg-card rounded-2xl border border-border shadow-md p-7">
           <AnimatePresence mode="wait">
             {done ? (
               <motion.div key="done"
                 initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                style={{ textAlign: 'center', padding: '12px 0' }}>
-                <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#dcfce7',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
-                  <CheckCircle2 size={22} style={{ color: '#16a34a' }} />
+                className="text-center py-3">
+                <div className="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-3.5">
+                  <CheckCircle2 size={22} className="text-success" />
                 </div>
-                <p style={{ margin: '0 0 4px', fontWeight: 700, color: '#0f172a', fontSize: 15 }}>
+                <p className="m-0 mb-1 font-bold text-foreground text-[15px]">
                   Password updated!
                 </p>
-                <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>
+                <p className="m-0 text-[13px] text-muted-foreground">
                   Redirecting to your dashboard…
                 </p>
               </motion.div>
             ) : (
-              <motion.form key="form" onSubmit={handleSubmit}
-                style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <motion.form key="form" onSubmit={handleSubmit} className="flex flex-col gap-3.5">
 
                 <AnimatePresence>
                   {error && (
                     <motion.div
                       initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }} style={{ overflow: 'hidden', marginBottom: 2 }}>
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                        background: '#fef2f2', border: '1px solid #fecaca',
-                        color: '#dc2626', fontSize: 13, fontWeight: 500,
-                        padding: '10px 14px', borderRadius: 9,
-                      }}>
-                        <AlertCircle size={14} style={{ flexShrink: 0 }} /> {error}
+                      exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+                      <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium px-3.5 py-2.5 rounded-lg">
+                        <AlertCircle size={14} className="shrink-0" /> {error}
                       </div>
                     </motion.div>
                   )}
@@ -166,41 +137,20 @@ const ChangePassword = () => {
                 <PwdField label="Confirm new password" value={confirmPwd}
                   onChange={e => setConfirmPwd(e.target.value)} placeholder="Repeat new password" />
 
-                <button type="submit" disabled={loading} style={{
-                  marginTop: 4, width: '100%', padding: '13px',
-                  borderRadius: 10, border: 'none',
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  background: '#7c3aed', color: '#fff',
-                  fontSize: 14, fontWeight: 600,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  opacity: loading ? 0.65 : 1,
-                  boxShadow: '0 4px 12px rgba(124,58,237,.25)',
-                  transition: 'opacity .15s, background .15s',
-                }}
-                  onMouseEnter={e => { if (!loading) e.currentTarget.style.background = '#6d28d9'; }}
-                  onMouseLeave={e => e.currentTarget.style.background = '#7c3aed'}>
+                <Button type="submit" disabled={loading} size="lg" className="mt-1 w-full">
                   {loading
-                    ? <><span style={{ width: 14, height: 14, borderRadius: '50%',
-                          border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff',
-                          animation: 'spin .7s linear infinite', display: 'inline-block' }} /> Saving…</>
+                    ? <><Loader2 size={14} className="animate-spin" /> Saving…</>
                     : 'Set new password →'}
-                </button>
+                </Button>
               </motion.form>
             )}
           </AnimatePresence>
         </div>
 
-        <p style={{ marginTop: 18, textAlign: 'center', fontSize: 11.5, color: '#cbd5e1' }}>
-          Federal Government of Somalia · NPC Portal
+        <p className="mt-[18px] text-center text-[11.5px] text-muted-foreground/50">
+          Federal Government of Somalia · TenderRank
         </p>
       </motion.div>
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        input::placeholder { color: #cbd5e1; }
-        input { caret-color: #7c3aed; }
-        * { box-sizing: border-box; }
-      `}</style>
     </div>
   );
 };

@@ -4,8 +4,12 @@ import { motion } from 'framer-motion';
 import { apiService } from '../services/api';
 import {
   FileText, Send, Clock, CheckCircle2, XCircle,
-  AlertCircle, AlertTriangle, ArrowRight, Building2, Calendar, Zap,
+  AlertTriangle, ArrowRight, Building2, Calendar,
 } from 'lucide-react';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import { Skeleton } from '../components/ui/skeleton';
+import { cn } from '../lib/utils';
 
 const FadeUp = ({ children, delay = 0 }) => (
   <motion.div
@@ -17,16 +21,9 @@ const FadeUp = ({ children, delay = 0 }) => (
   </motion.div>
 );
 
-const STATUS = {
-  under_review: { label: 'Under Review', icon: Clock,        bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
-  approved:     { label: 'Approved',     icon: CheckCircle2, bg: '#f0fdf4', color: '#10b981', border: '#bbf7d0' },
-  rejected:     { label: 'Rejected',     icon: XCircle,      bg: '#fef2f2', color: '#ef4444', border: '#fecaca' },
-  submitted:    { label: 'Submitted',    icon: Send,         bg: '#f5f3ff', color: '#7c3aed', border: '#ede9fe' },
-};
-
-const Sk = ({ className = '' }) => (
-  <div className={`rounded-lg animate-pulse ${className}`} style={{ background: '#f1f5f9' }} />
-);
+const STATUS_VARIANT = { under_review: 'warning', approved: 'success', rejected: 'destructive', submitted: 'default' };
+const STATUS_ICON = { under_review: Clock, approved: CheckCircle2, rejected: XCircle, submitted: Send };
+const STATUS_LABEL = { under_review: 'Under Review', approved: 'Approved', rejected: 'Rejected', submitted: 'Submitted' };
 
 const SupplierDashboard = () => {
   const userJson = localStorage.getItem('user');
@@ -43,12 +40,12 @@ const SupplierDashboard = () => {
       apiService.getProposals(),
       apiService.getProfile(),
     ]).then(([tRes, pRes, profRes]) => {
-        setTenders(tRes.data || []);
-        setProposals(pRes.data || []);
-        const p = profRes.data;
-        const required = ['company_name', 'registration_number', 'company_type', 'country', 'city', 'address', 'phone', 'contact_person'];
-        setProfileComplete(required.every(f => p[f]?.trim()));
-      })
+      setTenders(tRes.data || []);
+      setProposals(pRes.data || []);
+      const p = profRes.data;
+      const required = ['company_name', 'registration_number', 'company_type', 'country', 'city', 'address', 'phone', 'contact_person'];
+      setProfileComplete(required.every(f => p[f]?.trim()));
+    })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -60,19 +57,17 @@ const SupplierDashboard = () => {
     .slice(0, 5);
 
   const STATS = [
-    { label: 'Open Tenders',  value: openTenders.length,                                      icon: FileText,     color: '#7c3aed', bg: '#f5f3ff' },
-    { label: 'My Proposals',  value: proposals.length,                                        icon: Send,         color: '#0ea5e9', bg: '#f0f9ff' },
-    { label: 'Under Review',  value: proposals.filter(p => p.status === 'under_review').length, icon: Clock,      color: '#d97706', bg: '#fffbeb' },
-    { label: 'Approved',      value: proposals.filter(p => p.status === 'approved').length,   icon: CheckCircle2, color: '#10b981', bg: '#f0fdf4' },
+    { label: 'Open Tenders', value: openTenders.length, icon: FileText, tone: 'text-primary bg-primary/10' },
+    { label: 'My Proposals', value: proposals.length, icon: Send, tone: 'text-sky-600 bg-sky-50' },
+    { label: 'Under Review', value: proposals.filter(p => p.status === 'under_review').length, icon: Clock, tone: 'text-warning bg-warning/10' },
+    { label: 'Approved', value: proposals.filter(p => p.status === 'approved').length, icon: CheckCircle2, tone: 'text-success bg-success/10' },
   ];
 
   if (loading) return (
     <div className="space-y-6">
-      <div className="space-y-1"><Sk className="h-4 w-24" /><Sk className="h-8 w-56" /><Sk className="h-4 w-64" /></div>
+      <div className="space-y-1"><Skeleton className="h-4 w-24" /><Skeleton className="h-8 w-56" /><Skeleton className="h-4 w-64" /></div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[...Array(4)].map((_, i) => (
-          <div key={i} className="rounded-2xl p-5 h-28 animate-pulse" style={{ background: '#fff', border: '1px solid #f1f5f9' }} />
-        ))}
+        {[...Array(4)].map((_, i) => <Skeleton key={i} className="rounded-xl h-28 bg-card border border-border" />)}
       </div>
     </div>
   );
@@ -82,40 +77,36 @@ const SupplierDashboard = () => {
 
       {/* Profile incomplete banner */}
       {!profileComplete && (
-        <Link to="/profile"
-          className="flex items-center justify-between gap-4 px-5 py-4 rounded-2xl transition-all"
-          style={{ background: '#fffbeb', border: '1px solid #fde68a' }}
-          onMouseEnter={e => e.currentTarget.style.background = '#fef3c7'}
-          onMouseLeave={e => e.currentTarget.style.background = '#fffbeb'}>
+        <Link
+          to="/profile"
+          className="flex items-center justify-between gap-4 px-5 py-4 rounded-xl bg-warning/10 border border-warning/25 transition-colors hover:bg-warning/15 no-underline">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#fef3c7' }}>
-              <AlertTriangle size={15} style={{ color: '#d97706' }} />
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-warning/15">
+              <AlertTriangle size={15} className="text-warning" />
             </div>
             <div>
-              <p className="text-sm font-bold" style={{ color: '#92400e' }}>Complete your company profile</p>
-              <p className="text-xs mt-0.5" style={{ color: '#b45309' }}>
+              <p className="text-sm font-bold text-foreground">Complete your company profile</p>
+              <p className="text-xs mt-0.5 text-muted-foreground">
                 Your profile must be complete before you can submit proposals.
               </p>
             </div>
           </div>
-          <span className="text-xs font-bold px-3 py-1.5 rounded-lg shrink-0"
-            style={{ background: '#d97706', color: '#fff' }}>
+          <Badge variant="warning" className="shrink-0 px-3 py-1.5 bg-warning text-warning-foreground border-transparent">
             Complete Profile
-          </span>
+          </Badge>
         </Link>
       )}
-
 
       {/* Header */}
       <FadeUp>
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.12em] mb-1" style={{ color: '#7c3aed' }}>
+          <p className="text-[10px] font-bold uppercase tracking-[0.12em] mb-1 text-primary">
             Supplier Portal
           </p>
-          <h1 className="text-2xl font-extrabold text-[#0f172a]">
+          <h1 className="text-2xl font-extrabold text-foreground">
             Welcome, {user.name?.split(' ')[0]}
           </h1>
-          <p className="text-sm text-[#94a3b8] mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             Browse open tenders and track your submitted proposals.
           </p>
         </div>
@@ -123,14 +114,14 @@ const SupplierDashboard = () => {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {STATS.map(({ label, value, icon: Icon, color, bg }, i) => (
+        {STATS.map(({ label, value, icon: Icon, tone }, i) => (
           <FadeUp key={label} delay={i * 0.07}>
-            <div className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #f1f5f9', boxShadow: '0 2px 8px rgba(15,23,42,0.04)' }}>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: bg }}>
-                <Icon size={16} style={{ color }} />
+            <div className="rounded-xl p-5 bg-card border border-border shadow-sm">
+              <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center mb-3', tone)}>
+                <Icon size={16} />
               </div>
-              <p className="text-2xl font-extrabold text-[#0f172a]">{value}</p>
-              <p className="text-xs font-semibold text-[#64748b] mt-0.5">{label}</p>
+              <p className="text-2xl font-extrabold text-foreground">{value}</p>
+              <p className="text-xs font-semibold text-muted-foreground mt-0.5">{label}</p>
             </div>
           </FadeUp>
         ))}
@@ -140,33 +131,25 @@ const SupplierDashboard = () => {
 
         {/* Open Tenders */}
         <FadeUp delay={0.18}>
-          <div className="rounded-2xl overflow-hidden"
-            style={{ background: '#fff', border: '1px solid #f1f5f9', boxShadow: '0 2px 8px rgba(15,23,42,0.04)' }}>
-            <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid #f8fafc', background: '#fafafa' }}>
+          <div className="rounded-xl overflow-hidden bg-card border border-border shadow-sm">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/30">
               <div className="flex items-center gap-2">
-                <FileText size={14} style={{ color: '#7c3aed' }} />
-                <h2 className="text-sm font-bold text-[#0f172a]">Open Tenders</h2>
-                {openTenders.length > 0 && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold"
-                    style={{ background: '#f5f3ff', color: '#7c3aed' }}>{openTenders.length}</span>
-                )}
+                <FileText size={14} className="text-primary" />
+                <h2 className="text-sm font-bold text-foreground">Open Tenders</h2>
+                {openTenders.length > 0 && <Badge>{openTenders.length}</Badge>}
               </div>
-              <Link to="/supplier/tenders"
-                className="text-xs font-semibold flex items-center gap-1 transition-colors"
-                style={{ color: '#7c3aed' }}
-                onMouseEnter={e => e.currentTarget.style.color = '#6d28d9'}
-                onMouseLeave={e => e.currentTarget.style.color = '#7c3aed'}>
+              <Link to="/supplier/tenders" className="text-xs font-semibold flex items-center gap-1 text-primary hover:text-primary/80 no-underline transition-colors">
                 View all <ArrowRight size={11} />
               </Link>
             </div>
 
             {openTenders.length === 0 ? (
               <div className="py-16 text-center">
-                <FileText size={24} style={{ color: '#e2e8f0' }} className="mx-auto mb-2" />
-                <p className="text-sm text-[#94a3b8]">No open tenders available right now.</p>
+                <FileText size={24} className="text-muted-foreground/30 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">No open tenders available right now.</p>
               </div>
             ) : (
-              <div className="divide-y" style={{ borderColor: '#f8fafc' }}>
+              <div className="divide-y divide-border">
                 {openTenders.slice(0, 4).map((t, i) => {
                   const isClosed = t.deadline && new Date() > new Date(t.deadline);
                   const daysLeft = t.deadline ? Math.ceil((new Date(t.deadline) - Date.now()) / 86400000) : null;
@@ -176,31 +159,23 @@ const SupplierDashboard = () => {
                       initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 + i * 0.06 }}
-                      className="flex items-center justify-between px-5 py-3.5 gap-4 transition-colors"
-                      onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      className="flex items-center justify-between px-5 py-3.5 gap-4 transition-colors hover:bg-accent/50"
                     >
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-[#0f172a] truncate">{t.title}</p>
+                        <p className="text-sm font-semibold text-foreground truncate">{t.title}</p>
                         {t.deadline && (
-                          <span className="flex items-center gap-1 text-[10px] mt-0.5 font-medium"
-                            style={{ color: daysLeft !== null && daysLeft <= 7 ? '#ef4444' : '#94a3b8' }}>
+                          <span className={cn('flex items-center gap-1 text-[10px] mt-0.5 font-medium', daysLeft !== null && daysLeft <= 7 ? 'text-destructive' : 'text-muted-foreground')}>
                             <Calendar size={9} />
                             {daysLeft !== null && daysLeft > 0 ? `${daysLeft}d left` : 'Deadline passed'}
                           </span>
                         )}
                       </div>
                       {!isClosed ? (
-                        <Link to={`/submit/${t.id}`}
-                          className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-xl text-white transition-all"
-                          style={{ background: '#7c3aed' }}
-                          onMouseEnter={e => e.currentTarget.style.background = '#6d28d9'}
-                          onMouseLeave={e => e.currentTarget.style.background = '#7c3aed'}>
-                          Submit
-                        </Link>
+                        <Button size="sm" asChild className="shrink-0">
+                          <Link to={`/submit/${t.id}`} className="no-underline">Submit</Link>
+                        </Button>
                       ) : (
-                        <span className="shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-lg"
-                          style={{ background: '#f1f5f9', color: '#94a3b8' }}>Closed</span>
+                        <Badge variant="secondary" className="shrink-0">Closed</Badge>
                       )}
                     </motion.div>
                   );
@@ -212,37 +187,30 @@ const SupplierDashboard = () => {
 
         {/* My Proposals */}
         <FadeUp delay={0.24}>
-          <div className="rounded-2xl overflow-hidden"
-            style={{ background: '#fff', border: '1px solid #f1f5f9', boxShadow: '0 2px 8px rgba(15,23,42,0.04)' }}>
-            <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid #f8fafc', background: '#fafafa' }}>
+          <div className="rounded-xl overflow-hidden bg-card border border-border shadow-sm">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/30">
               <div className="flex items-center gap-2">
-                <Send size={14} style={{ color: '#0ea5e9' }} />
-                <h2 className="text-sm font-bold text-[#0f172a]">My Proposals</h2>
-                {proposals.length > 0 && (
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold"
-                    style={{ background: '#f0f9ff', color: '#0ea5e9' }}>{proposals.length}</span>
-                )}
+                <Send size={14} className="text-sky-600" />
+                <h2 className="text-sm font-bold text-foreground">My Proposals</h2>
+                {proposals.length > 0 && <Badge className="bg-sky-50 text-sky-600 border-transparent">{proposals.length}</Badge>}
               </div>
             </div>
 
             {recentProposals.length === 0 ? (
               <div className="py-16 text-center">
-                <Send size={24} style={{ color: '#e2e8f0' }} className="mx-auto mb-2" />
-                <p className="text-sm font-semibold text-[#0f172a]">No proposals yet</p>
-                <p className="text-xs text-[#94a3b8] mt-1">Browse open tenders and submit your first proposal.</p>
-                <Link to="/supplier/tenders"
-                  className="inline-flex items-center gap-1.5 mt-4 text-xs font-bold px-4 py-2 rounded-xl text-white"
-                  style={{ background: '#7c3aed' }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#6d28d9'}
-                  onMouseLeave={e => e.currentTarget.style.background = '#7c3aed'}>
-                  Browse Tenders <ArrowRight size={11} />
-                </Link>
+                <Send size={24} className="text-muted-foreground/30 mx-auto mb-2" />
+                <p className="text-sm font-semibold text-foreground">No proposals yet</p>
+                <p className="text-xs text-muted-foreground mt-1">Browse open tenders and submit your first proposal.</p>
+                <Button size="sm" asChild className="mt-4">
+                  <Link to="/supplier/tenders" className="no-underline">Browse Tenders <ArrowRight size={11} /></Link>
+                </Button>
               </div>
             ) : (
-              <div className="divide-y" style={{ borderColor: '#f8fafc' }}>
+              <div className="divide-y divide-border">
                 {recentProposals.map((p, i) => {
-                  const cfg = STATUS[p.status] || STATUS.submitted;
-                  const Icon = cfg.icon;
+                  const variant = STATUS_VARIANT[p.status] || 'default';
+                  const Icon = STATUS_ICON[p.status] || Send;
+                  const label = STATUS_LABEL[p.status] || 'Submitted';
                   return (
                     <motion.div
                       key={p.id}
@@ -252,23 +220,19 @@ const SupplierDashboard = () => {
                     >
                       <Link
                         to={`/supplier/proposal/${p.id}`}
-                        className="flex items-center justify-between px-5 py-3.5 gap-4 transition-colors"
-                        style={{ display: 'flex', textDecoration: 'none' }}
-                        onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        className="flex items-center justify-between px-5 py-3.5 gap-4 no-underline transition-colors hover:bg-accent/50"
                       >
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold text-[#0f172a] truncate">
+                          <p className="text-sm font-semibold text-foreground truncate">
                             {p.tender_title || `Tender #${p.tender_id}`}
                           </p>
-                          <p className="text-[10px] text-[#94a3b8] mt-0.5">
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
                             {p.submitted_at ? new Date(p.submitted_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
                           </p>
                         </div>
-                        <span className="shrink-0 flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-lg border"
-                          style={{ background: cfg.bg, color: cfg.color, borderColor: cfg.border }}>
-                          <Icon size={10} /> {cfg.label}
-                        </span>
+                        <Badge variant={variant} className="shrink-0">
+                          <Icon size={10} /> {label}
+                        </Badge>
                       </Link>
                     </motion.div>
                   );
@@ -282,25 +246,19 @@ const SupplierDashboard = () => {
       {/* Profile nudge */}
       {!user.company_name && (
         <FadeUp delay={0.32}>
-          <div className="rounded-2xl px-5 py-4 flex items-center justify-between gap-4"
-            style={{ background: 'linear-gradient(135deg,#f5f3ff,#ede9fe)', border: '1px solid #ddd6fe' }}>
+          <div className="rounded-xl px-5 py-4 flex items-center justify-between gap-4 bg-primary/10 border border-primary/20">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: 'linear-gradient(135deg,#7c3aed,#a78bfa)' }}>
-                <Building2 size={15} color="#fff" />
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-primary">
+                <Building2 size={15} className="text-primary-foreground" />
               </div>
               <div>
-                <p className="text-sm font-bold text-[#0f172a]">Complete your company profile</p>
-                <p className="text-xs text-[#6d28d9] mt-0.5">A complete profile increases your chances of winning tenders.</p>
+                <p className="text-sm font-bold text-foreground">Complete your company profile</p>
+                <p className="text-xs text-primary/80 mt-0.5">A complete profile increases your chances of winning tenders.</p>
               </div>
             </div>
-            <Link to="/profile"
-              className="shrink-0 text-xs font-bold px-4 py-2 rounded-xl text-white transition-all"
-              style={{ background: '#7c3aed' }}
-              onMouseEnter={e => e.currentTarget.style.background = '#6d28d9'}
-              onMouseLeave={e => e.currentTarget.style.background = '#7c3aed'}>
-              Set Up Profile
-            </Link>
+            <Button size="sm" asChild className="shrink-0">
+              <Link to="/profile" className="no-underline">Set Up Profile</Link>
+            </Button>
           </div>
         </FadeUp>
       )}

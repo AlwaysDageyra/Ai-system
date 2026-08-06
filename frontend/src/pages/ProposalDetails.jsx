@@ -10,77 +10,56 @@ import {
   Phone, Globe, Hash, MapPin, Mail, BadgeCheck, BadgeAlert,
   Trash2, RefreshCw, Upload, X,
 } from 'lucide-react';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import { Skeleton } from '../components/ui/skeleton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
+import ScoreGauge from '../components/ScoreGauge';
+import { cn } from '../lib/utils';
 
 const STATUS_CONFIG = {
-  under_review: { label: 'Under Review', icon: AlertCircle,  bg: '#fffbeb', color: '#d97706', border: '#fde68a' },
-  approved:     { label: 'Approved',     icon: CheckCircle2, bg: '#f0fdf4', color: '#10b981', border: '#bbf7d0' },
-  rejected:     { label: 'Rejected',     icon: XCircle,      bg: '#fef2f2', color: '#ef4444', border: '#fecaca' },
-};
-
-const Sk = ({ className = '' }) => (
-  <div className={`rounded-lg animate-pulse ${className}`} style={{ background: '#f1f5f9' }} />
-);
-
-/* ── Score arc gauge ── */
-const ScoreGauge = ({ score }) => {
-  const r = 58; const cx = 80; const cy = 76;
-  const circ = Math.PI * r;
-  const offset = circ * (1 - Math.min(score, 100) / 100);
-  const color = score >= 80 ? '#10b981' : score >= 50 ? '#f59e0b' : '#ef4444';
-  const label = score >= 80 ? 'Excellent' : score >= 50 ? 'Fair' : 'Poor';
-  return (
-    <div className="flex flex-col items-center">
-      <svg width="160" height="100" viewBox="0 0 160 100">
-        <path d={`M ${cx-r} ${cy} A ${r} ${r} 0 0 1 ${cx+r} ${cy}`}
-          fill="none" stroke="rgba(124,58,237,0.1)" strokeWidth="14" strokeLinecap="round" />
-        <motion.path d={`M ${cx-r} ${cy} A ${r} ${r} 0 0 1 ${cx+r} ${cy}`}
-          fill="none" stroke={color} strokeWidth="14" strokeLinecap="round"
-          strokeDasharray={circ}
-          initial={{ strokeDashoffset: circ }}
-          animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1.2, delay: 0.2, ease: 'easeOut' }} />
-        <text x={cx} y={cy-10} textAnchor="middle" fontSize="26" fontWeight="800" fill={color}
-          style={{ fontFamily: 'inherit' }}>{Math.round(score)}%</text>
-        <text x={cx} y={cy+8} textAnchor="middle" fontSize="10" fill="#94a3b8"
-          style={{ fontFamily: 'inherit' }}>{label}</text>
-      </svg>
-      <p className="text-[10px] font-bold uppercase tracking-widest mt-1" style={{ color: '#94a3b8' }}>
-        Compliance Score
-      </p>
-    </div>
-  );
+  under_review: { label: 'Under Review', icon: AlertCircle, variant: 'warning' },
+  approved: { label: 'Approved', icon: CheckCircle2, variant: 'success' },
+  rejected: { label: 'Rejected', icon: XCircle, variant: 'destructive' },
 };
 
 /* ── AI recommendation ── */
 const getRecommendation = (score, mandatoryFailed, redFlagCount) => {
   if (mandatoryFailed > 0)
-    return { verdict: 'REJECT', color: '#ef4444', bg: '#fef2f2', border: '#fecaca', icon: ThumbsDown,
+    return { verdict: 'REJECT', tone: 'destructive', icon: ThumbsDown,
       text: `${mandatoryFailed} mandatory requirement${mandatoryFailed > 1 ? 's' : ''} not met. This proposal does not satisfy the minimum compliance threshold and should be disqualified.` };
   if (score >= 80 && redFlagCount === 0)
-    return { verdict: 'RECOMMEND AWARD', color: '#10b981', bg: '#f0fdf4', border: '#bbf7d0', icon: ThumbsUp,
+    return { verdict: 'RECOMMEND AWARD', tone: 'success', icon: ThumbsUp,
       text: `Score of ${Math.round(score)}% with no red flags. This proposal meets all requirements and is a strong candidate for award.` };
   if (score >= 50)
-    return { verdict: 'REVIEW REQUIRED', color: '#d97706', bg: '#fffbeb', border: '#fde68a', icon: AlertTriangle,
+    return { verdict: 'REVIEW REQUIRED', tone: 'warning', icon: AlertTriangle,
       text: `Score of ${Math.round(score)}% with ${redFlagCount} red flag${redFlagCount !== 1 ? 's' : ''}. Meets most criteria but warrants manual review before a decision is made.` };
-  return { verdict: 'REJECT', color: '#ef4444', bg: '#fef2f2', border: '#fecaca', icon: ThumbsDown,
+  return { verdict: 'REJECT', tone: 'destructive', icon: ThumbsDown,
     text: `Score of ${Math.round(score)}% is below the minimum threshold. Significant documentation gaps and ${redFlagCount} red flag${redFlagCount !== 1 ? 's' : ''} detected.` };
+};
+
+const TONE_CLASSES = {
+  success: { bg: 'bg-success/10', border: 'border-success/25', text: 'text-success', solid: 'bg-success' },
+  warning: { bg: 'bg-warning/10', border: 'border-warning/25', text: 'text-warning', solid: 'bg-warning' },
+  destructive: { bg: 'bg-destructive/10', border: 'border-destructive/25', text: 'text-destructive', solid: 'bg-destructive' },
 };
 
 /* ── Supplier profile card (admin view only) ── */
 const SupplierCard = ({ profile }) => {
   const fields = [
-    { key: 'company_name',       label: 'Company',     icon: Building2 },
-    { key: 'registration_number',label: 'Reg. No.',    icon: Hash      },
-    { key: 'phone',              label: 'Phone',       icon: Phone     },
-    { key: 'website',            label: 'Website',     icon: Globe     },
-    { key: 'email',              label: 'Email',       icon: Mail      },
-    { key: 'address',            label: 'Address',     icon: MapPin    },
+    { key: 'company_name', label: 'Company', icon: Building2 },
+    { key: 'registration_number', label: 'Reg. No.', icon: Hash },
+    { key: 'phone', label: 'Phone', icon: Phone },
+    { key: 'website', label: 'Website', icon: Globe },
+    { key: 'email', label: 'Email', icon: Mail },
+    { key: 'address', label: 'Address', icon: MapPin },
   ];
-  const profileFields = ['company_name','registration_number','phone','website','address'];
+  const profileFields = ['company_name', 'registration_number', 'phone', 'website', 'address'];
   const filled = profileFields.filter(k => profile[k]?.trim?.()).length;
-  const pct    = Math.round(filled / profileFields.length * 100);
-  const pctColor = pct === 100 ? '#10b981' : pct >= 60 ? '#f59e0b' : '#7c3aed';
-  const initials = (profile.name || 'S').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+  const pct = Math.round(filled / profileFields.length * 100);
+  const pctTone = pct === 100 ? 'text-success bg-success' : pct >= 60 ? 'text-warning bg-warning' : 'text-primary bg-primary';
+  const [pctText, pctBar] = pctTone.split(' ');
+  const initials = (profile.name || 'S').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   const hasProfile = filled > 0;
 
   return (
@@ -88,46 +67,29 @@ const SupplierCard = ({ profile }) => {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay: 0.05 }}
-      className="rounded-2xl overflow-hidden"
-      style={{ border: '1px solid rgba(124,58,237,0.15)', boxShadow: '0 4px 20px rgba(124,58,237,0.07)' }}
+      className="rounded-xl overflow-hidden border border-primary/15 shadow-sm"
     >
-      {/* Dark header */}
-      <div className="flex items-center gap-4 px-5 py-4"
-        style={{ background: 'linear-gradient(135deg,#0f0a1e,#1a0a3a)', borderBottom: '1px solid rgba(124,58,237,0.15)' }}>
-        {/* Avatar */}
-        <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 font-extrabold text-base"
-          style={{ background: 'linear-gradient(135deg,#7c3aed,#a78bfa)', color: '#fff', letterSpacing: 1 }}>
+      <div className="flex items-center gap-4 px-5 py-4 border-b border-primary/15" style={{ background: 'linear-gradient(135deg, oklch(0.145 0 0), oklch(0.2 0.03 296.9))' }}>
+        <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 font-extrabold text-base bg-primary text-primary-foreground tracking-wide">
           {initials}
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-white font-bold text-sm truncate">{profile.name}</p>
-          <p className="text-[11px] mt-0.5 truncate" style={{ color: 'rgba(167,139,250,0.6)' }}>{profile.email}</p>
+          <p className="text-[11px] mt-0.5 truncate text-violet-300/70">{profile.email}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {hasProfile
-            ? <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold"
-                style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.2)' }}>
-                <BadgeCheck size={10} /> Profile Complete
-              </span>
-            : <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold"
-                style={{ background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.2)' }}>
-                <BadgeAlert size={10} /> No Company Profile
-              </span>
-          }
-          <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold"
-            style={{ background: 'rgba(124,58,237,0.15)', color: '#a78bfa', border: '1px solid rgba(124,58,237,0.2)' }}>
-            Supplier
-          </span>
+            ? <Badge className="bg-success/15 text-emerald-400 border-success/20"><BadgeCheck size={10} /> Profile Complete</Badge>
+            : <Badge className="bg-warning/15 text-amber-400 border-warning/20"><BadgeAlert size={10} /> No Company Profile</Badge>}
+          <Badge className="bg-primary/20 text-primary-foreground/90 border-primary/25">Supplier</Badge>
         </div>
       </div>
 
-      {/* Body */}
-      <div className="px-5 py-4" style={{ background: '#fff' }}>
+      <div className="px-5 py-4 bg-card">
         {!hasProfile ? (
-          <div className="flex items-center gap-3 py-3 px-4 rounded-xl"
-            style={{ background: '#fffbeb', border: '1px solid #fde68a' }}>
-            <BadgeAlert size={15} style={{ color: '#d97706' }} className="shrink-0" />
-            <p className="text-sm text-[#92400e]">
+          <div className="flex items-center gap-3 py-3 px-4 rounded-xl bg-warning/10 border border-warning/25">
+            <BadgeAlert size={15} className="text-warning shrink-0" />
+            <p className="text-sm text-amber-800">
               This supplier has not filled in their company profile yet. Only their username and email are available.
             </p>
           </div>
@@ -135,18 +97,15 @@ const SupplierCard = ({ profile }) => {
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {fields.filter(f => f.key !== 'address' && profile[f.key]).map(({ key, label, icon: Icon }) => (
-                <div key={key} className="flex items-start gap-3 p-3 rounded-xl"
-                  style={{ background: '#f8fafc', border: '1px solid #f1f5f9' }}>
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ background: '#f5f3ff' }}>
-                    <Icon size={12} style={{ color: '#7c3aed' }} />
+                <div key={key} className="flex items-start gap-3 p-3 rounded-xl bg-muted/30 border border-border">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-primary/10">
+                    <Icon size={12} className="text-primary" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-[#94a3b8]">{label}</p>
-                    <p className="text-sm font-semibold text-[#0f172a] truncate mt-0.5">
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">{label}</p>
+                    <p className="text-sm font-semibold text-foreground truncate mt-0.5">
                       {key === 'website'
-                        ? <a href={profile[key]} target="_blank" rel="noreferrer"
-                            className="hover:underline" style={{ color: '#7c3aed' }}>{profile[key]}</a>
+                        ? <a href={profile[key]} target="_blank" rel="noreferrer" className="hover:underline text-primary">{profile[key]}</a>
                         : profile[key]}
                     </p>
                   </div>
@@ -154,31 +113,27 @@ const SupplierCard = ({ profile }) => {
               ))}
             </div>
             {profile.address && (
-              <div className="flex items-start gap-3 p-3 rounded-xl"
-                style={{ background: '#f8fafc', border: '1px solid #f1f5f9' }}>
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
-                  style={{ background: '#f5f3ff' }}>
-                  <MapPin size={12} style={{ color: '#7c3aed' }} />
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/30 border border-border">
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 bg-primary/10">
+                  <MapPin size={12} className="text-primary" />
                 </div>
                 <div>
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-[#94a3b8]">Address</p>
-                  <p className="text-sm font-semibold text-[#0f172a] mt-0.5 whitespace-pre-line">{profile.address}</p>
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Address</p>
+                  <p className="text-sm font-semibold text-foreground mt-0.5 whitespace-pre-line">{profile.address}</p>
                 </div>
               </div>
             )}
-            {/* Profile completeness bar */}
-            <div className="pt-3" style={{ borderTop: '1px solid #f1f5f9' }}>
+            <div className="pt-3 border-t border-border">
               <div className="flex items-center justify-between mb-1.5">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8]">Profile Completeness</p>
-                <span className="text-xs font-extrabold" style={{ color: pctColor }}>{pct}%</span>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Profile Completeness</p>
+                <span className={cn('text-xs font-extrabold', pctText)}>{pct}%</span>
               </div>
-              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#f1f5f9' }}>
+              <div className="h-1.5 rounded-full overflow-hidden bg-muted">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${pct}%` }}
                   transition={{ duration: 0.9, ease: 'easeOut', delay: 0.2 }}
-                  className="h-full rounded-full"
-                  style={{ background: pctColor }}
+                  className={cn('h-full rounded-full', pctBar)}
                 />
               </div>
             </div>
@@ -192,19 +147,19 @@ const SupplierCard = ({ profile }) => {
 const ProposalDetails = () => {
   const { proposalId } = useParams();
   const navigate = useNavigate();
-  const [proposal, setProposal]             = useState(null);
-  const [tender, setTender]                 = useState(null);
-  const [supplierName, setSupplierName]     = useState('');
+  const [proposal, setProposal] = useState(null);
+  const [tender, setTender] = useState(null);
+  const [supplierName, setSupplierName] = useState('');
   const [supplierProfile, setSupplierProfile] = useState(null);
-  const [loading, setLoading]               = useState(true);
-  const [error, setError]                   = useState('');
-  const [statusLoading, setStatusLoading]   = useState(false);
-  const [deleteConfirm, setDeleteConfirm]   = useState(false);
-  const [deleteLoading, setDeleteLoading]   = useState(false);
-  const [replaceOpen, setReplaceOpen]       = useState(false);
-  const [replaceFile, setReplaceFile]       = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [statusLoading, setStatusLoading] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [replaceOpen, setReplaceOpen] = useState(false);
+  const [replaceFile, setReplaceFile] = useState(null);
   const [replaceLoading, setReplaceLoading] = useState(false);
-  const [replaceError, setReplaceError]     = useState('');
+  const [replaceError, setReplaceError] = useState('');
   const pollRef = useRef(null);
 
   const userJson = localStorage.getItem('user');
@@ -236,7 +191,6 @@ const ProposalDetails = () => {
         if (match) setSupplierName(match.supplier_name);
         if (spRes?.data) setSupplierProfile(spRes.data);
 
-        // If AI hasn't scored yet, poll until it does (max 20 attempts ≈ 60 s)
         if (p.requirements?.length === 0) {
           let pollCount = 0;
           pollRef.current = setInterval(async () => {
@@ -307,315 +261,246 @@ const ProposalDetails = () => {
     }
   };
 
-  /* ── Loading skeleton ── */
   if (loading) return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="max-w-4xl space-y-5"
-    >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="max-w-4xl space-y-5">
       <div className="flex items-center gap-3">
-        <Sk className="w-10 h-10 rounded-xl shrink-0" />
-        <div className="space-y-2 flex-1"><Sk className="h-6 w-56" /><Sk className="h-3 w-36" /></div>
+        <Skeleton className="w-10 h-10 rounded-xl shrink-0" />
+        <div className="space-y-2 flex-1"><Skeleton className="h-6 w-56" /><Skeleton className="h-3 w-36" /></div>
       </div>
       <div className="grid grid-cols-4 gap-3">
-        {[...Array(4)].map((_, i) => <Sk key={i} className="h-24 rounded-2xl" />)}
+        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
       </div>
       <div className="grid sm:grid-cols-2 gap-4">
-        <Sk className="h-48 rounded-2xl" />
-        <Sk className="h-48 rounded-2xl" />
+        <Skeleton className="h-48 rounded-xl" />
+        <Skeleton className="h-48 rounded-xl" />
       </div>
-      <Sk className="h-20 rounded-2xl" />
-      <Sk className="h-64 rounded-2xl" />
+      <Skeleton className="h-20 rounded-xl" />
+      <Skeleton className="h-64 rounded-xl" />
     </motion.div>
   );
 
   if (error) return (
-    <div className="flex items-center gap-3 p-5 rounded-2xl text-sm font-medium"
-      style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#ef4444' }}>
+    <div className="flex items-center gap-3 p-5 rounded-xl text-sm font-medium bg-destructive/10 border border-destructive/20 text-destructive">
       <AlertCircle size={16} className="shrink-0" /> {error}
     </div>
   );
 
-  const isProcessing  = (proposal?.requirements?.length ?? 0) === 0;
-  const score         = proposal?.score || 0;
-  const scoreColor    = score >= 80 ? '#10b981' : score >= 50 ? '#f59e0b' : '#ef4444';
-  const status        = proposal?.status || 'under_review';
-  const statusCfg     = STATUS_CONFIG[status] || STATUS_CONFIG.under_review;
-  const StatusIcon    = statusCfg.icon;
-  const reqs          = proposal?.requirements || [];
-  const mandatory     = reqs.filter(r => r.is_mandatory);
-  const scoredReqs    = reqs.filter(r => !r.is_mandatory);
-  const mandatoryPassed  = mandatory.filter(r => r.detected).length;
-  const mandatoryFailed  = mandatory.length - mandatoryPassed;
-  const totalEarned      = scoredReqs.reduce((s, r) => s + (r.points_earned   ?? 0), 0);
-  const totalPossible    = scoredReqs.reduce((s, r) => s + (r.points_possible ?? 0), 0);
-  const redFlagCount     = (proposal?.red_flags || []).length;
-  const rec              = !isProcessing ? getRecommendation(score, mandatoryFailed, redFlagCount) : null;
-  const pdfUrl           = proposal?.pdf_path
+  const isProcessing = (proposal?.requirements?.length ?? 0) === 0;
+  const score = proposal?.score || 0;
+  const scoreTone = score >= 80 ? TONE_CLASSES.success : score >= 50 ? TONE_CLASSES.warning : TONE_CLASSES.destructive;
+  const status = proposal?.status || 'under_review';
+  const statusCfg = STATUS_CONFIG[status] || STATUS_CONFIG.under_review;
+  const reqs = proposal?.requirements || [];
+  const mandatory = reqs.filter(r => r.is_mandatory);
+  const scoredReqs = reqs.filter(r => !r.is_mandatory);
+  const mandatoryPassed = mandatory.filter(r => r.detected).length;
+  const mandatoryFailed = mandatory.length - mandatoryPassed;
+  const totalEarned = scoredReqs.reduce((s, r) => s + (r.points_earned ?? 0), 0);
+  const totalPossible = scoredReqs.reduce((s, r) => s + (r.points_possible ?? 0), 0);
+  const redFlagCount = (proposal?.red_flags || []).length;
+  const rec = !isProcessing ? getRecommendation(score, mandatoryFailed, redFlagCount) : null;
+  const pdfUrl = proposal?.pdf_path
     ? `${import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'}/${proposal.pdf_path}`
     : null;
 
   const METRICS = [
-    { label: 'Compliance Score', value: isProcessing ? '—' : `${Math.round(score)}%`, color: isProcessing ? '#94a3b8' : scoreColor, bg: isProcessing ? '#f8fafc' : score >= 80 ? '#f0fdf4' : score >= 50 ? '#fffbeb' : '#fef2f2', icon: TrendingUp },
-    { label: 'Mandatory',        value: isProcessing ? '—' : `${mandatoryPassed}/${mandatory.length}`, color: isProcessing ? '#94a3b8' : mandatoryFailed > 0 ? '#ef4444' : '#10b981', bg: isProcessing ? '#f8fafc' : mandatoryFailed > 0 ? '#fef2f2' : '#f0fdf4', icon: ShieldCheck },
-    { label: 'Points Scored',    value: isProcessing ? '—' : `${totalEarned}/${totalPossible}`, color: isProcessing ? '#94a3b8' : '#7c3aed', bg: isProcessing ? '#f8fafc' : '#f5f3ff', icon: Zap },
-    { label: 'Red Flags',        value: isProcessing ? '—' : redFlagCount, color: isProcessing ? '#94a3b8' : redFlagCount > 0 ? '#ef4444' : '#10b981', bg: isProcessing ? '#f8fafc' : redFlagCount > 0 ? '#fef2f2' : '#f0fdf4', icon: Flag },
+    { label: 'Compliance Score', value: isProcessing ? '—' : `${Math.round(score)}%`, tone: isProcessing ? null : scoreTone, icon: TrendingUp },
+    { label: 'Mandatory', value: isProcessing ? '—' : `${mandatoryPassed}/${mandatory.length}`, tone: isProcessing ? null : (mandatoryFailed > 0 ? TONE_CLASSES.destructive : TONE_CLASSES.success), icon: ShieldCheck },
+    { label: 'Points Scored', value: isProcessing ? '—' : `${totalEarned}/${totalPossible}`, tone: isProcessing ? null : { text: 'text-primary', bg: 'bg-primary/10' }, icon: Zap },
+    { label: 'Red Flags', value: isProcessing ? '—' : redFlagCount, tone: isProcessing ? null : (redFlagCount > 0 ? TONE_CLASSES.destructive : TONE_CLASSES.success), icon: Flag },
   ];
 
   return (
     <AnimatePresence mode="wait">
-      <motion.div
-        key="content"
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-        className="max-w-4xl space-y-5"
-      >
+      <motion.div key="content" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="max-w-4xl space-y-5">
+
         {/* Header */}
         <div>
           <Link to={isAdmin ? '/dashboard' : '/supplier'}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold mb-3 transition-colors"
-            style={{ color: '#94a3b8' }}
-            onMouseEnter={e => e.currentTarget.style.color = '#7c3aed'}
-            onMouseLeave={e => e.currentTarget.style.color = '#94a3b8'}>
+            className="inline-flex items-center gap-1.5 text-xs font-semibold mb-3 text-muted-foreground hover:text-primary no-underline transition-colors">
             <ArrowLeft size={12} /> Back to Dashboard
           </Link>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: 'linear-gradient(135deg,#7c3aed,#a78bfa)' }}>
-              <FileText size={18} color="#fff" />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-primary">
+              <FileText size={18} className="text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-2xl font-extrabold text-[#0f172a]">
+              <h1 className="text-2xl font-extrabold text-foreground">
                 {isAdmin ? 'Proposal Audit Report' : 'My Proposal'}
               </h1>
-              <p className="text-sm text-[#94a3b8] mt-0.5">
+              <p className="text-sm text-muted-foreground mt-0.5">
                 Proposal #{proposal?.id}
-                {tender?.title && <> · <span className="font-semibold text-[#64748b]">{tender.title}</span></>}
+                {tender?.title && <> · <span className="font-semibold text-foreground/70">{tender.title}</span></>}
               </p>
             </div>
           </div>
         </div>
 
-        {/* ── Action bar — always visible right under the title ── */}
-        <div className="rounded-2xl px-5 py-4 flex items-center justify-between gap-4 flex-wrap"
-          style={{ background: '#fff', border: '1px solid #f1f5f9', boxShadow: '0 2px 8px rgba(15,23,42,0.04)' }}>
+        {/* Action bar */}
+        <div className="rounded-xl px-5 py-4 flex items-center justify-between gap-4 flex-wrap bg-card border border-border shadow-sm">
 
-          {/* Current status badge */}
           <div className="flex items-center gap-3">
-            <p className="text-xs font-bold uppercase tracking-widest text-[#94a3b8]">Current Status</p>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold"
-              style={{ background: statusCfg.bg, color: statusCfg.color, borderColor: statusCfg.border }}>
-              <StatusIcon size={12} /> {statusCfg.label}
-            </div>
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Current Status</p>
+            <Badge variant={statusCfg.variant} className="px-3 py-1.5">
+              <statusCfg.icon size={12} /> {statusCfg.label}
+            </Badge>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Status change buttons — admin only */}
             {isAdmin && Object.entries(STATUS_CONFIG).map(([key, cfg]) => {
               const Icon = cfg.icon;
               const isActive = status === key;
+              const tone = TONE_CLASSES[cfg.variant];
               return (
                 <button key={key}
                   onClick={() => handleStatusChange(key)}
                   disabled={statusLoading || isActive}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold border transition-all disabled:opacity-60"
-                  style={isActive
-                    ? { background: cfg.bg, color: cfg.color, borderColor: cfg.border, cursor: 'default' }
-                    : { background: '#f8fafc', color: '#64748b', borderColor: '#e2e8f0' }}
-                  onMouseEnter={e => { if (!isActive && !statusLoading) { e.currentTarget.style.background = cfg.bg; e.currentTarget.style.color = cfg.color; e.currentTarget.style.borderColor = cfg.border; } }}
-                  onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#64748b'; e.currentTarget.style.borderColor = '#e2e8f0'; } }}>
+                  className={cn(
+                    'inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold border transition-colors disabled:opacity-60',
+                    isActive ? cn(tone.bg, tone.text, tone.border, 'cursor-default') : 'bg-muted text-muted-foreground border-border hover:bg-accent'
+                  )}>
                   {statusLoading && status !== key
-                    ? <span className="animate-spin rounded-full h-3 w-3 border-b-2" style={{ borderColor: cfg.color }} />
+                    ? <span className="animate-spin rounded-full h-3 w-3 border-b-2 border-current" />
                     : <Icon size={12} />}
                   {cfg.label}
                 </button>
               );
             })}
 
-            {/* PDF download */}
             {pdfUrl && (
               <a href={pdfUrl} target="_blank" rel="noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all"
-                style={{ background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ede9fe' }}
-                onMouseEnter={e => { e.currentTarget.style.background = '#7c3aed'; e.currentTarget.style.color = '#fff'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = '#f5f3ff'; e.currentTarget.style.color = '#7c3aed'; }}>
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-primary/10 text-primary border border-primary/20 no-underline transition-colors hover:bg-primary hover:text-primary-foreground">
                 <Download size={11} /> Document
               </a>
             )}
 
-            {/* Supplier: replace + delete */}
             {!isAdmin && (
               <>
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => { setReplaceOpen(o => !o); setReplaceError(''); setReplaceFile(null); }}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all"
-                  style={{ background: '#f0f9ff', color: '#0ea5e9', border: '1px solid #bae6fd' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#0ea5e9'; e.currentTarget.style.color = '#fff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = '#f0f9ff'; e.currentTarget.style.color = '#0ea5e9'; }}>
+                  className="text-sky-600 border-sky-200 bg-sky-50 hover:bg-sky-600 hover:text-white"
+                >
                   <RefreshCw size={11} /> Replace Document
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setDeleteConfirm(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all"
-                  style={{ background: '#fef2f2', color: '#ef4444', border: '1px solid #fecaca' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#ef4444'; e.currentTarget.style.color = '#fff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#ef4444'; }}>
+                  className="text-destructive border-destructive/25 bg-destructive/10 hover:bg-destructive hover:text-white"
+                >
                   <Trash2 size={11} /> Withdraw
-                </button>
+                </Button>
               </>
             )}
           </div>
         </div>
 
-        {/* Replace document panel — supplier only */}
+        {/* Replace document panel */}
         <AnimatePresence>
           {!isAdmin && replaceOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.22 }}
-              style={{ overflow: 'hidden' }}
-            >
-              <form onSubmit={handleReplace}
-                className="rounded-2xl p-5 space-y-4"
-                style={{ background: '#fff', border: '1px solid #bae6fd', boxShadow: '0 2px 8px rgba(14,165,233,0.07)' }}>
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.22 }} className="overflow-hidden">
+              <form onSubmit={handleReplace} className="rounded-xl p-5 space-y-4 bg-card border border-sky-200 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: '#f0f9ff' }}>
-                      <RefreshCw size={13} style={{ color: '#0ea5e9' }} />
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-sky-50">
+                      <RefreshCw size={13} className="text-sky-600" />
                     </div>
-                    <p className="text-sm font-bold text-[#0f172a]">Replace Proposal Document</p>
+                    <p className="text-sm font-bold text-foreground">Replace Proposal Document</p>
                   </div>
                   <button type="button" onClick={() => setReplaceOpen(false)}
-                    className="p-1.5 rounded-lg transition-colors"
-                    style={{ color: '#94a3b8' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                    className="p-1.5 rounded-lg text-muted-foreground transition-colors hover:bg-accent">
                     <X size={14} />
                   </button>
                 </div>
-                <p className="text-xs text-[#64748b]">
+                <p className="text-xs text-muted-foreground">
                   Uploading a new document will replace your current submission and reset the compliance score.
                   Your proposal status will return to <strong>Under Review</strong>.
                 </p>
 
-                {/* File drop zone */}
-                <label className="flex flex-col items-center justify-center gap-2 p-6 rounded-xl cursor-pointer transition-all"
-                  style={{ border: '2px dashed #bae6fd', background: replaceFile ? '#f0f9ff' : '#f8fafc' }}
+                <label className={cn(
+                  'flex flex-col items-center justify-center gap-2 p-6 rounded-xl cursor-pointer transition-colors border-2 border-dashed',
+                  replaceFile ? 'border-sky-300 bg-sky-50' : 'border-sky-200 bg-muted/30'
+                )}
                   onDragOver={e => e.preventDefault()}
                   onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) setReplaceFile(f); }}>
                   <input type="file" accept=".pdf,.docx,.doc" className="hidden"
                     onChange={e => setReplaceFile(e.target.files[0] || null)} />
-                  <Upload size={22} style={{ color: replaceFile ? '#0ea5e9' : '#94a3b8' }} />
+                  <Upload size={22} className={replaceFile ? 'text-sky-600' : 'text-muted-foreground'} />
                   {replaceFile
-                    ? <p className="text-sm font-bold text-[#0ea5e9]">{replaceFile.name}</p>
-                    : <p className="text-sm font-semibold text-[#94a3b8]">Click or drag a PDF / Word file here</p>}
+                    ? <p className="text-sm font-bold text-sky-600">{replaceFile.name}</p>
+                    : <p className="text-sm font-semibold text-muted-foreground">Click or drag a PDF / Word file here</p>}
                 </label>
 
                 {replaceError && (
-                  <p className="text-xs font-semibold text-red-500 flex items-center gap-1.5">
+                  <p className="text-xs font-semibold text-destructive flex items-center gap-1.5">
                     <AlertCircle size={12} /> {replaceError}
                   </p>
                 )}
 
                 <div className="flex gap-2 justify-end">
-                  <button type="button" onClick={() => setReplaceOpen(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-bold transition-all"
-                    style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
-                    onMouseLeave={e => e.currentTarget.style.background = '#f8fafc'}>
+                  <Button type="button" variant="secondary" onClick={() => setReplaceOpen(false)}>
                     Cancel
-                  </button>
-                  <button type="submit" disabled={replaceLoading || !replaceFile}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white disabled:opacity-50 transition-all"
-                    style={{ background: '#0ea5e9' }}
-                    onMouseEnter={e => { if (!replaceLoading) e.currentTarget.style.background = '#0284c7'; }}
-                    onMouseLeave={e => e.currentTarget.style.background = '#0ea5e9'}>
+                  </Button>
+                  <Button type="submit" disabled={replaceLoading || !replaceFile} className="bg-sky-600 hover:bg-sky-700">
                     {replaceLoading
-                      ? <><span className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" /> Uploading…</>
+                      ? <><Loader2 size={11} className="animate-spin" /> Uploading…</>
                       : <><Upload size={11} /> Submit Replacement</>}
-                  </button>
+                  </Button>
                 </div>
               </form>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Delete confirm modal */}
-        <AnimatePresence>
-          {deleteConfirm && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
-              style={{ background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(4px)' }}>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.96, y: 8 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.96, y: 8 }}
-                transition={{ duration: 0.2 }}
-                className="w-full max-w-sm rounded-2xl p-6"
-                style={{ background: '#fff', border: '1px solid #f1f5f9', boxShadow: '0 24px 48px rgba(15,23,42,0.18)' }}>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#fef2f2' }}>
-                    <Trash2 size={16} style={{ color: '#ef4444' }} />
-                  </div>
-                  <p className="font-bold text-[#0f172a]">Withdraw Proposal?</p>
+        {/* Delete confirm dialog */}
+        <Dialog open={deleteConfirm} onOpenChange={setDeleteConfirm}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-destructive/10">
+                  <Trash2 size={16} className="text-destructive" />
                 </div>
-                <p className="text-sm text-[#64748b] leading-relaxed mb-5">
-                  This will permanently remove your proposal submission. You can resubmit a new proposal for this tender if the deadline hasn't passed.
-                </p>
-                <div className="flex gap-2">
-                  <button onClick={() => setDeleteConfirm(false)} disabled={deleteLoading}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all"
-                    style={{ background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
-                    onMouseLeave={e => e.currentTarget.style.background = '#f8fafc'}>
-                    Cancel
-                  </button>
-                  <button onClick={handleDelete} disabled={deleteLoading}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-50 transition-all"
-                    style={{ background: '#ef4444' }}
-                    onMouseEnter={e => { if (!deleteLoading) e.currentTarget.style.background = '#dc2626'; }}
-                    onMouseLeave={e => e.currentTarget.style.background = '#ef4444'}>
-                    {deleteLoading
-                      ? <span className="flex items-center justify-center gap-2"><span className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" /> Withdrawing…</span>
-                      : 'Yes, Withdraw'}
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                <DialogTitle>Withdraw Proposal?</DialogTitle>
+              </div>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              This will permanently remove your proposal submission. You can resubmit a new proposal for this tender if the deadline hasn't passed.
+            </p>
+            <DialogFooter className="mt-5 gap-2">
+              <Button variant="secondary" className="flex-1" onClick={() => setDeleteConfirm(false)} disabled={deleteLoading}>
+                Cancel
+              </Button>
+              <Button variant="destructive" className="flex-1" onClick={handleDelete} disabled={deleteLoading}>
+                {deleteLoading
+                  ? <><Loader2 size={14} className="animate-spin" /> Withdrawing…</>
+                  : 'Yes, Withdraw'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Supplier profile card — admin only */}
         {isAdmin && supplierProfile && (
           <SupplierCard profile={supplierProfile} />
         )}
 
-        {/* AI Processing banner — shown until scoring completes */}
+        {/* AI Processing banner */}
         <AnimatePresence>
           {isProcessing && (
             <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
+              initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.3 }}
-              className="flex items-center gap-4 px-5 py-4 rounded-2xl overflow-hidden"
-              style={{ background: 'linear-gradient(135deg,#f5f3ff,#ede9fe)', border: '1px solid #ddd6fe' }}
+              className="flex items-center gap-4 px-5 py-4 rounded-xl overflow-hidden bg-primary/10 border border-primary/20"
             >
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: 'linear-gradient(135deg,#7c3aed,#a78bfa)' }}>
-                <Loader2 size={16} color="#fff" className="animate-spin" />
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-primary">
+                <Loader2 size={16} className="text-primary-foreground animate-spin" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-bold text-[#0f172a]">AI Scoring In Progress</p>
-                <p className="text-xs text-[#6d28d9] mt-0.5">
+                <p className="text-sm font-bold text-foreground">AI Scoring In Progress</p>
+                <p className="text-xs text-primary mt-0.5">
                   The document is being analysed for compliance. Results will appear automatically — no need to refresh.
                 </p>
               </div>
@@ -624,8 +509,7 @@ const ProposalDetails = () => {
                   <motion.div key={i}
                     animate={{ opacity: [0.3, 1, 0.3] }}
                     transition={{ duration: 1.2, delay, repeat: Infinity }}
-                    className="w-1.5 h-1.5 rounded-full"
-                    style={{ background: '#7c3aed' }}
+                    className="w-1.5 h-1.5 rounded-full bg-primary"
                   />
                 ))}
               </div>
@@ -633,81 +517,73 @@ const ProposalDetails = () => {
           )}
         </AnimatePresence>
 
-        {/* Summary metric cards — all roles */}
-        {(
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {METRICS.map(({ label, value, color, bg, icon: Icon }, i) => (
-              <motion.div key={label}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.06 }}
-                className="rounded-2xl p-4"
-                style={{ background: '#fff', border: '1px solid #f1f5f9', boxShadow: '0 2px 8px rgba(15,23,42,0.04)' }}>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-2" style={{ background: bg }}>
-                  <Icon size={14} style={{ color }} />
-                </div>
-                <p className="text-xl font-extrabold" style={{ color }}>
-                  {isProcessing && value === '—'
-                    ? <span className="inline-block w-8 h-5 rounded animate-pulse" style={{ background: '#f1f5f9' }} />
-                    : value}
-                </p>
-                <p className="text-[10px] font-semibold text-[#94a3b8] mt-0.5">{label}</p>
-              </motion.div>
-            ))}
-          </div>
-        )}
+        {/* Summary metric cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {METRICS.map(({ label, value, tone, icon: Icon }, i) => (
+            <motion.div key={label}
+              initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+              className="rounded-xl p-4 bg-card border border-border shadow-sm">
+              <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center mb-2', tone?.bg || 'bg-muted')}>
+                <Icon size={14} className={tone?.text || 'text-muted-foreground'} />
+              </div>
+              <p className={cn('text-xl font-extrabold', tone?.text || 'text-muted-foreground')}>
+                {isProcessing && value === '—'
+                  ? <Skeleton className="inline-block w-8 h-5" />
+                  : value}
+              </p>
+              <p className="text-[10px] font-semibold text-muted-foreground mt-0.5">{label}</p>
+            </motion.div>
+          ))}
+        </div>
 
         {/* Info: submission details + score gauge */}
         <div className="grid sm:grid-cols-2 gap-4">
-          {/* Submission details */}
-          <div className="rounded-2xl p-5 space-y-4"
-            style={{ background: '#fff', border: '1px solid #f1f5f9', boxShadow: '0 2px 8px rgba(15,23,42,0.04)' }}>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-[#94a3b8]">Submission Details</p>
+          <div className="rounded-xl p-5 space-y-4 bg-card border border-border shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Submission Details</p>
             <div className="space-y-3">
               {tender?.title && (
                 <div className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ background: '#f5f3ff' }}>
-                    <FileText size={12} style={{ color: '#7c3aed' }} />
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 bg-primary/10">
+                    <FileText size={12} className="text-primary" />
                   </div>
                   <div>
-                    <p className="text-[10px] text-[#94a3b8] font-semibold">Tender</p>
-                    <p className="text-sm font-bold text-[#0f172a]">{tender.title}</p>
+                    <p className="text-[10px] text-muted-foreground font-semibold">Tender</p>
+                    <p className="text-sm font-bold text-foreground">{tender.title}</p>
                   </div>
                 </div>
               )}
               {supplierName && (
                 <div className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ background: '#f0fdf4' }}>
-                    <User size={12} style={{ color: '#10b981' }} />
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 bg-success/10">
+                    <User size={12} className="text-success" />
                   </div>
                   <div>
-                    <p className="text-[10px] text-[#94a3b8] font-semibold">Supplier</p>
-                    <p className="text-sm font-bold text-[#0f172a]">{supplierName}</p>
+                    <p className="text-[10px] text-muted-foreground font-semibold">Supplier</p>
+                    <p className="text-sm font-bold text-foreground">{supplierName}</p>
                   </div>
                 </div>
               )}
               {tender?.company_name && (
                 <div className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ background: '#fffbeb' }}>
-                    <Building2 size={12} style={{ color: '#d97706' }} />
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 bg-warning/10">
+                    <Building2 size={12} className="text-warning" />
                   </div>
                   <div>
-                    <p className="text-[10px] text-[#94a3b8] font-semibold">Organisation</p>
-                    <p className="text-sm font-bold text-[#0f172a]">{tender.company_name}</p>
+                    <p className="text-[10px] text-muted-foreground font-semibold">Organisation</p>
+                    <p className="text-sm font-bold text-foreground">{tender.company_name}</p>
                   </div>
                 </div>
               )}
               <div className="flex items-start gap-3">
-                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ background: '#f8fafc' }}>
-                  <Clock size={12} style={{ color: '#64748b' }} />
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5 bg-muted">
+                  <Clock size={12} className="text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="text-[10px] text-[#94a3b8] font-semibold">Submitted</p>
-                  <p className="text-sm font-bold text-[#0f172a]">
+                  <p className="text-[10px] text-muted-foreground font-semibold">Submitted</p>
+                  <p className="text-sm font-bold text-foreground">
                     {proposal?.submitted_at
                       ? new Date(proposal.submitted_at).toLocaleString('en-GB', {
-                          day: 'numeric', month: 'long', year: 'numeric',
-                          hour: '2-digit', minute: '2-digit',
+                          day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
                         })
                       : '—'}
                   </p>
@@ -715,40 +591,34 @@ const ProposalDetails = () => {
               </div>
               {pdfUrl && (
                 <a href={pdfUrl} target="_blank" rel="noreferrer"
-                  className="flex items-center gap-2 text-xs font-bold px-3 py-2.5 rounded-xl transition-all mt-1"
-                  style={{ background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ede9fe' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#7c3aed'; e.currentTarget.style.color = '#fff'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = '#f5f3ff'; e.currentTarget.style.color = '#7c3aed'; }}>
+                  className="flex items-center gap-2 text-xs font-bold px-3 py-2.5 rounded-lg mt-1 bg-primary/10 text-primary border border-primary/20 no-underline transition-colors hover:bg-primary hover:text-primary-foreground">
                   <Download size={13} /> Download Proposal Document
                 </a>
               )}
             </div>
           </div>
 
-          {/* Score gauge — all roles */}
-          <div className="rounded-2xl p-5 flex flex-col items-center justify-center"
-            style={{ background: '#fff', border: '1px solid #f1f5f9', boxShadow: '0 2px 8px rgba(15,23,42,0.04)' }}>
+          <div className="rounded-xl p-5 flex flex-col items-center justify-center bg-card border border-border shadow-sm">
             {isProcessing ? (
               <div className="text-center space-y-3 py-4">
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
-                  style={{ background: '#f5f3ff' }}>
-                  <Loader2 size={28} className="animate-spin" style={{ color: '#7c3aed' }} />
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto bg-primary/10">
+                  <Loader2 size={28} className="animate-spin text-primary" />
                 </div>
-                <p className="text-sm font-bold text-[#0f172a]">Awaiting AI Score</p>
-                <p className="text-xs text-[#94a3b8]">The compliance engine is processing your document.</p>
+                <p className="text-sm font-bold text-foreground">Awaiting AI Score</p>
+                <p className="text-xs text-muted-foreground">The compliance engine is processing your document.</p>
               </div>
             ) : (
               <>
-                <ScoreGauge score={score} />
-                <div className="grid grid-cols-3 gap-3 w-full mt-4 pt-4" style={{ borderTop: '1px solid #f1f5f9' }}>
+                <ScoreGauge score={score} label="Compliance Score" />
+                <div className="grid grid-cols-3 gap-3 w-full mt-4 pt-4 border-t border-border">
                   {[
-                    { label: 'Mandatory', val: `${mandatoryPassed}/${mandatory.length}`, color: mandatoryFailed > 0 ? '#ef4444' : '#10b981' },
-                    { label: 'Points',    val: `${totalEarned}/${totalPossible}`,         color: '#7c3aed' },
-                    { label: 'Flags',     val: redFlagCount,                              color: redFlagCount > 0 ? '#ef4444' : '#10b981' },
-                  ].map(({ label, val, color }) => (
+                    { label: 'Mandatory', val: `${mandatoryPassed}/${mandatory.length}`, tone: mandatoryFailed > 0 ? 'text-destructive' : 'text-success' },
+                    { label: 'Points', val: `${totalEarned}/${totalPossible}`, tone: 'text-primary' },
+                    { label: 'Flags', val: redFlagCount, tone: redFlagCount > 0 ? 'text-destructive' : 'text-success' },
+                  ].map(({ label, val, tone }) => (
                     <div key={label} className="text-center">
-                      <p className="text-lg font-extrabold" style={{ color }}>{val}</p>
-                      <p className="text-[9px] font-bold uppercase tracking-widest text-[#94a3b8] mt-0.5">{label}</p>
+                      <p className={cn('text-lg font-extrabold', tone)}>{val}</p>
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mt-0.5">{label}</p>
                     </div>
                   ))}
                 </div>
@@ -757,62 +627,50 @@ const ProposalDetails = () => {
           </div>
         </div>
 
-        {/* AI Recommendation — only when scored */}
+        {/* AI Recommendation */}
         {isAdmin && !isProcessing && rec && (
           <motion.div
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="rounded-2xl overflow-hidden"
-            style={{ border: `1px solid ${rec.border}`, boxShadow: '0 2px 8px rgba(15,23,42,0.04)' }}
+            initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+            className={cn('rounded-xl overflow-hidden border shadow-sm', TONE_CLASSES[rec.tone].border)}
           >
-            <div className="flex items-center gap-3 px-5 py-3.5"
-              style={{ background: rec.bg, borderBottom: `1px solid ${rec.border}` }}>
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                style={{ background: rec.color }}>
-                <rec.icon size={13} color="#fff" />
+            <div className={cn('flex items-center gap-3 px-5 py-3.5 border-b', TONE_CLASSES[rec.tone].bg, TONE_CLASSES[rec.tone].border)}>
+              <div className={cn('w-7 h-7 rounded-lg flex items-center justify-center shrink-0', TONE_CLASSES[rec.tone].solid)}>
+                <rec.icon size={13} className="text-white" />
               </div>
-              <p className="text-xs font-extrabold uppercase tracking-widest flex-1" style={{ color: rec.color }}>
+              <p className={cn('text-xs font-extrabold uppercase tracking-widest flex-1', TONE_CLASSES[rec.tone].text)}>
                 AI Recommendation
               </p>
-              <span className="px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-white"
-                style={{ background: rec.color }}>{rec.verdict}</span>
+              <span className={cn('px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wide text-white', TONE_CLASSES[rec.tone].solid)}>
+                {rec.verdict}
+              </span>
               <div className="flex items-center gap-1.5 ml-2 shrink-0">
-                <div className="w-5 h-5 rounded-md flex items-center justify-center"
-                  style={{ background: 'linear-gradient(135deg,#7c3aed,#a78bfa)' }}>
-                  <Zap size={10} color="#fff" fill="#fff" />
+                <div className="w-5 h-5 rounded-md flex items-center justify-center bg-primary">
+                  <Zap size={10} className="text-primary-foreground" fill="currentColor" />
                 </div>
-                <span className="text-[10px] font-bold text-[#94a3b8]">Powered by AI</span>
+                <span className="text-[10px] font-bold text-muted-foreground">Powered by AI</span>
               </div>
             </div>
-            <div className="px-5 py-4" style={{ background: '#fff' }}>
-              <p className="text-sm text-[#64748b] leading-relaxed">{rec.text}</p>
+            <div className="px-5 py-4 bg-card">
+              <p className="text-sm text-muted-foreground leading-relaxed">{rec.text}</p>
             </div>
           </motion.div>
         )}
 
-
-        {/* Compliance breakdown — all roles */}
-        {(
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg,#7c3aed,#a78bfa)' }}>
-                <Zap size={12} color="#fff" fill="#fff" />
-              </div>
-              <h2 className="text-sm font-bold text-[#0f172a]">Document Compliance Breakdown</h2>
-              {!isProcessing && (
-                <span className="text-xs font-semibold text-[#94a3b8]">
-                  · {reqs.length} requirement{reqs.length !== 1 ? 's' : ''} assessed
-                </span>
-              )}
+        {/* Compliance breakdown */}
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-primary">
+              <Zap size={12} className="text-primary-foreground" fill="currentColor" />
             </div>
-            <ComplianceTable
-              requirements={reqs}
-              redFlags={proposal?.red_flags || []}
-            />
+            <h2 className="text-sm font-bold text-foreground">Document Compliance Breakdown</h2>
+            {!isProcessing && (
+              <span className="text-xs font-semibold text-muted-foreground">
+                · {reqs.length} requirement{reqs.length !== 1 ? 's' : ''} assessed
+              </span>
+            )}
           </div>
-        )}
+          <ComplianceTable requirements={reqs} redFlags={proposal?.red_flags || []} />
+        </div>
       </motion.div>
     </AnimatePresence>
   );

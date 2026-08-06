@@ -1,97 +1,110 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Award, FileDown, Eye, ShieldX } from 'lucide-react';
+import { DataTable, DataTableColumnHeader } from './ui/data-table';
+import { Badge } from './ui/badge';
+import { cn } from '../lib/utils';
+
+const RankBadge = ({ rank }) => {
+  if (rank === 1) return <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-foreground text-background font-bold text-xs shadow-sm">1</span>;
+  if (rank === 2) return <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-xs">2</span>;
+  if (rank === 3) return <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-600 text-white font-bold text-xs">3</span>;
+  return <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground font-bold text-xs border border-border">{rank}</span>;
+};
+
+const scoreTone = (s) => {
+  if (s >= 70) return 'text-primary bg-primary/10';
+  if (s >= 50) return 'text-amber-600 bg-amber-50';
+  return 'text-destructive bg-destructive/10';
+};
+
+function buildColumns(API_URL) {
+  return [
+    {
+      accessorKey: 'rank',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Rank" />,
+      cell: ({ row }) => (
+        <div className="flex items-center justify-center w-7">
+          <RankBadge rank={row.original.rank} />
+        </div>
+      ),
+      size: 60,
+    },
+    {
+      accessorKey: 'supplier_name',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Supplier" />,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2 font-semibold text-foreground">
+          {row.original.rank === 1 && <Award className="h-4 w-4 text-amber-500 shrink-0" />}
+          {row.original.supplier_name}
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'submitted_at',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Submitted" />,
+      cell: ({ getValue }) => <span className="text-muted-foreground">{new Date(getValue()).toLocaleDateString()}</span>,
+      meta: { label: 'Submitted' },
+    },
+    {
+      accessorKey: 'score',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="Score" />,
+      cell: ({ row }) => {
+        const score = row.original.score ?? 0;
+        return (
+          <div className="flex items-center gap-1.5">
+            <span className={cn('font-bold text-sm px-2.5 py-1 rounded-lg', scoreTone(score))}>
+              {score.toFixed(0)}%
+            </span>
+            {row.original.disqualified && (
+              <Badge variant="destructive" title={row.original.disq_reasons?.join('; ')}>
+                <ShieldX size={10} /> DISQ
+              </Badge>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      id: 'actions',
+      header: () => <span className="block text-right">Actions</span>,
+      enableHiding: false,
+      cell: ({ row }) => (
+        <div className="flex items-center justify-end gap-2">
+          <Link
+            to={`/proposal/${row.original.proposal_id}`}
+            className="inline-flex items-center gap-1 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground no-underline transition-colors hover:bg-accent hover:text-primary"
+          >
+            <Eye size={13} /> View Audit
+          </Link>
+          {row.original.pdf_path && (
+            <a
+              href={`${API_URL}/${row.original.pdf_path}`}
+              target="_blank" rel="noreferrer"
+              className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary no-underline transition-colors hover:bg-primary/20"
+            >
+              <FileDown size={13} /> PDF
+            </a>
+          )}
+        </div>
+      ),
+    },
+  ];
+}
 
 const RankingTable = ({ rankings = [] }) => {
   const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
-
-  const RankBadge = ({ rank }) => {
-    if (rank === 1) return <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#1a3a3a] text-white font-bold text-xs shadow-sm">1</span>;
-    if (rank === 2) return <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#e8f4f4] text-[#2a7d7b] font-bold text-xs">2</span>;
-    if (rank === 3) return <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-600 text-white font-bold text-xs">3</span>;
-    return <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#f0f7f7] text-[#5a8a8b] font-bold text-xs border border-[#d8eaea]">{rank}</span>;
-  };
-
-  const scoreStyle = (s) => {
-    if (s >= 90) return 'text-[#2a7d7b] bg-[#e8f4f4]';
-    if (s >= 70) return 'text-[#2a7d7b] bg-[#e8f4f4]';
-    if (s >= 50) return 'text-amber-600 bg-amber-50';
-    return 'text-red-600 bg-red-50';
-  };
+  const columns = React.useMemo(() => buildColumns(API_URL), [API_URL]);
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-[#f0f5f5] bg-white shadow-sm">
-      <table className="min-w-full divide-y divide-[#f0f5f5] text-left text-sm">
-        <thead className="bg-[#f0f7f7]">
-          <tr>
-            <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-[#8aacac] w-16">Rank</th>
-            <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-[#8aacac]">Supplier</th>
-            <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-[#8aacac] hidden sm:table-cell">Submitted</th>
-            <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-[#8aacac]">Score</th>
-            <th className="px-4 py-3 text-xs font-bold uppercase tracking-wider text-[#8aacac] text-right">Actions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-[#f0f5f5]">
-          {rankings.length === 0 ? (
-            <tr>
-              <td colSpan="5" className="px-4 py-12 text-center text-[#8aacac] text-sm">
-                No supplier submissions found for this tender.
-              </td>
-            </tr>
-          ) : rankings.map((row) => (
-            <tr key={row.proposal_id} className="hover:bg-[#f8fcfc] transition-colors">
-              <td className="whitespace-nowrap px-4 py-3.5">
-                <div className="flex items-center justify-center">
-                  <RankBadge rank={row.rank} />
-                </div>
-              </td>
-              <td className="whitespace-nowrap px-4 py-3.5 font-semibold text-[#1a3a3a]">
-                <div className="flex items-center gap-2">
-                  {row.rank === 1 && <Award className="h-4 w-4 text-amber-500" />}
-                  {row.supplier_name}
-                </div>
-              </td>
-              <td className="whitespace-nowrap px-4 py-3.5 text-[#8aacac] text-sm hidden sm:table-cell">
-                {new Date(row.submitted_at).toLocaleDateString()}
-              </td>
-              <td className="whitespace-nowrap px-4 py-3.5">
-                <div className="flex items-center gap-1.5">
-                  <span className={`font-bold text-sm px-2.5 py-1 rounded-lg ${scoreStyle(row.score ?? 0)}`}>
-                    {(row.score ?? 0).toFixed(0)}%
-                  </span>
-                  {row.disqualified && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg"
-                      style={{ background: '#fef2f2', color: '#dc2626' }}
-                      title={row.disq_reasons?.join('; ')}>
-                      <ShieldX size={10} /> DISQ
-                    </span>
-                  )}
-                </div>
-              </td>
-              <td className="whitespace-nowrap px-4 py-3.5 text-right">
-                <div className="flex items-center justify-end gap-2">
-                  <Link
-                    to={`/proposal/${row.proposal_id}`}
-                    className="inline-flex items-center gap-1 rounded-xl border border-[#d8eaea] bg-white px-3 py-1.5 text-xs font-semibold text-[#5a8a8b] hover:bg-[#f0f7f7] hover:text-[#2a7d7b] transition-all"
-                  >
-                    <Eye size={13} /> View Audit
-                  </Link>
-                  {row.pdf_path && (
-                    <a
-                      href={`${API_URL}/${row.pdf_path}`}
-                      target="_blank" rel="noreferrer"
-                      className="inline-flex items-center gap-1 rounded-xl bg-[#e8f4f4] px-3 py-1.5 text-xs font-semibold text-[#5a8a8b] hover:bg-[#d8eaea] transition-all"
-                    >
-                      <FileDown size={13} /> PDF
-                    </a>
-                  )}
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <DataTable
+      columns={columns}
+      data={rankings}
+      searchKey="supplier_name"
+      searchPlaceholder="Filter by supplier..."
+      pageSize={10}
+      emptyMessage="No supplier submissions found for this tender."
+    />
   );
 };
 

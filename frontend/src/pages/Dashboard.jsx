@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { apiService } from '../services/api';
 import {
   FileText, Users, CheckCircle2, Clock, Plus, Trophy,
-  TrendingUp, AlertCircle, ChevronRight, Zap, BarChart3,
-  XCircle, ArrowUpRight, AlertTriangle,
+  TrendingUp, ChevronRight, Zap, BarChart3,
+  ArrowUpRight, AlertTriangle,
 } from 'lucide-react';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import { Skeleton } from '../components/ui/skeleton';
+import {
+  Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
+} from '../components/ui/table';
+import ScoreGauge from '../components/ScoreGauge';
+import { cn } from '../lib/utils';
 
 /* ── Animated counter ── */
 const AnimatedNum = ({ value, suffix = '', prefix = '' }) => {
@@ -27,93 +35,38 @@ const AnimatedNum = ({ value, suffix = '', prefix = '' }) => {
   return <>{prefix}{display.toLocaleString()}{suffix}</>;
 };
 
-/* ── Semi-circular gauge ── */
-const SemiGauge = ({ value = 0, max = 100 }) => {
-  const [animated, setAnimated] = useState(0);
-  const radius = 64, stroke = 10, cx = 80, cy = 78;
-  const startAngle = 200, endAngle = -20;
-  const range = startAngle - endAngle;
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      const duration = 1300;
-      const start = Date.now();
-      const tick = () => {
-        const p = Math.min((Date.now() - start) / duration, 1);
-        const eased = 1 - Math.pow(1 - p, 3);
-        setAnimated(eased * value);
-        if (p < 1) requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
-    }, 500);
-    return () => clearTimeout(timeout);
-  }, [value]);
-
-  const toRad = deg => (deg * Math.PI) / 180;
-  const pct = animated / max;
-
-  const arcPath = (from, to, r) => {
-    const s = { x: cx + r * Math.cos(toRad(from)), y: cy - r * Math.sin(toRad(from)) };
-    const e = { x: cx + r * Math.cos(toRad(to)), y: cy - r * Math.sin(toRad(to)) };
-    const large = Math.abs(from - to) > 180 ? 1 : 0;
-    const sweep = from > to ? 1 : 0;
-    return `M ${s.x} ${s.y} A ${r} ${r} 0 ${large} ${sweep} ${e.x} ${e.y}`;
-  };
-
-  const fillEnd = startAngle - pct * range;
-  const gaugeColor = animated >= 80 ? '#10b981' : animated >= 50 ? '#f59e0b' : '#ef4444';
-
-  return (
-    <svg width={160} height={90} viewBox="0 0 160 90">
-      <path d={arcPath(startAngle, endAngle, radius)} fill="none" stroke="rgba(124,58,237,0.12)" strokeWidth={stroke} strokeLinecap="round" />
-      <path d={arcPath(startAngle, fillEnd, radius)} fill="none" stroke={gaugeColor} strokeWidth={stroke} strokeLinecap="round"
-        style={{ transition: 'all 0.05s linear' }} />
-      <text x={cx} y={cy - 4} textAnchor="middle" fontSize="20" fontWeight="800" fill="#0f172a">
-        {animated.toFixed(0)}
-      </text>
-      <text x={cx + 22} y={cy - 6} textAnchor="start" fontSize="9" fontWeight="700" fill={gaugeColor}>%</text>
-      <text x={cx} y={cy + 12} textAnchor="middle" fontSize="9" fontWeight="500" fill="#94a3b8">Avg Score</text>
-    </svg>
-  );
-};
-
 /* ── Skeleton ── */
-const Sk = ({ className = '' }) => (
-  <div className={`rounded-lg animate-pulse ${className}`} style={{ background: '#f1f5f9' }} />
-);
-
 const DashboardSkeleton = () => (
-  <div className="space-y-6 animate-pulse">
+  <div className="space-y-6">
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {[...Array(4)].map((_, i) => <div key={i} className="rounded-2xl p-5 space-y-3" style={{ background: '#fff', border: '1px solid #f1f5f9', height: 100 }}><Sk className="h-4 w-20" /><Sk className="h-8 w-16" /></div>)}
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="rounded-xl p-5 space-y-3 bg-card border border-border h-[100px]">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-8 w-16" />
+        </div>
+      ))}
     </div>
     <div className="grid lg:grid-cols-3 gap-5">
       <div className="lg:col-span-2 space-y-4">
-        <div className="rounded-2xl p-6 space-y-3" style={{ background: '#fff', border: '1px solid #f1f5f9', height: 280 }}>
-          {[...Array(4)].map((_, i) => <Sk key={i} className="h-14 w-full rounded-xl" />)}
+        <div className="rounded-xl p-6 space-y-3 bg-card border border-border h-[280px]">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}
         </div>
       </div>
       <div className="space-y-4">
-        <div className="rounded-2xl p-6" style={{ background: '#fff', border: '1px solid #f1f5f9', height: 200 }} />
+        <div className="rounded-xl bg-card border border-border h-[200px]" />
       </div>
     </div>
   </div>
 );
 
-const StatusBadge = ({ status }) => {
-  const map = {
-    under_review: { label: 'Under Review', bg: '#fef3c7', color: '#d97706' },
-    approved:     { label: 'Approved',     bg: '#f0fdf4', color: '#10b981' },
-    rejected:     { label: 'Rejected',     bg: '#fef2f2', color: '#ef4444' },
-  };
-  const cfg = map[status] || map.under_review;
-  return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold"
-      style={{ background: cfg.bg, color: cfg.color }}>
-      {cfg.label}
-    </span>
-  );
-};
+const STATUS_BADGE_VARIANT = { under_review: 'warning', approved: 'success', rejected: 'destructive' };
+const STATUS_LABEL = { under_review: 'Under Review', approved: 'Approved', rejected: 'Rejected' };
+
+const StatusBadge = ({ status }) => (
+  <Badge variant={STATUS_BADGE_VARIANT[status] || 'warning'}>
+    {STATUS_LABEL[status] || 'Under Review'}
+  </Badge>
+);
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -182,32 +135,28 @@ const Dashboard = () => {
       label: 'Total Tenders',
       value: totalTenders,
       icon: FileText,
-      color: '#7c3aed',
-      bg: '#f5f3ff',
+      tone: 'text-primary bg-primary/10',
       sub: `${activeTenders} active`,
     },
     {
       label: 'Total Proposals',
       value: totalProposals,
       icon: BarChart3,
-      color: '#0ea5e9',
-      bg: '#f0f9ff',
+      tone: 'text-sky-600 bg-sky-50',
       sub: `${pendingProposals} pending`,
     },
     {
       label: 'Unique Suppliers',
       value: uniqueSuppliers,
       icon: Users,
-      color: '#10b981',
-      bg: '#f0fdf4',
+      tone: 'text-success bg-success/10',
       sub: isAdmin ? 'registered bidders' : 'on platform',
     },
     {
       label: 'Avg Score',
       value: avgScore.toFixed(1),
       icon: TrendingUp,
-      color: topScore >= 80 ? '#10b981' : '#f59e0b',
-      bg: topScore >= 80 ? '#f0fdf4' : '#fffbeb',
+      tone: topScore >= 80 ? 'text-success bg-success/10' : 'text-warning bg-warning/10',
       sub: `Top: ${topScore.toFixed(0)}%`,
       noCounter: true,
     },
@@ -221,26 +170,24 @@ const Dashboard = () => {
 
       {/* Profile incomplete banner */}
       {isAdmin && !profileComplete && (
-        <Link to="/admin/profile"
-          className="flex items-center justify-between gap-4 px-5 py-4 rounded-2xl transition-all"
-          style={{ background: '#fffbeb', border: '1px solid #fde68a' }}
-          onMouseEnter={e => e.currentTarget.style.background = '#fef3c7'}
-          onMouseLeave={e => e.currentTarget.style.background = '#fffbeb'}>
+        <Link
+          to="/admin/profile"
+          className="flex items-center justify-between gap-4 px-5 py-4 rounded-xl bg-warning/10 border border-warning/30 transition-colors hover:bg-warning/15 no-underline"
+        >
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#fef3c7' }}>
-              <AlertTriangle size={15} style={{ color: '#d97706' }} />
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-warning/15">
+              <AlertTriangle size={15} className="text-warning" />
             </div>
             <div>
-              <p className="text-sm font-bold" style={{ color: '#92400e' }}>Complete your organisation profile</p>
-              <p className="text-xs mt-0.5" style={{ color: '#b45309' }}>
+              <p className="text-sm font-bold text-foreground">Complete your organisation profile</p>
+              <p className="text-xs mt-0.5 text-muted-foreground">
                 You need to fill in your organisation details before you can create tenders.
               </p>
             </div>
           </div>
-          <span className="text-xs font-bold px-3 py-1.5 rounded-lg shrink-0"
-            style={{ background: '#d97706', color: '#fff' }}>
+          <Badge variant="warning" className="shrink-0 px-3 py-1.5 bg-warning text-warning-foreground border-transparent">
             Complete Profile
-          </span>
+          </Badge>
         </Link>
       )}
 
@@ -254,21 +201,19 @@ const Dashboard = () => {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: i * 0.07 }}
-              className="rounded-2xl p-5"
-              style={{ background: '#fff', border: '1px solid #f1f5f9', boxShadow: '0 2px 8px rgba(15,23,42,0.04)' }}
+              className="rounded-xl p-5 bg-card border border-border shadow-sm"
             >
               <div className="flex items-start justify-between mb-3">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: s.bg }}>
-                  <Icon size={16} style={{ color: s.color }} />
+                <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center shrink-0', s.tone)}>
+                  <Icon size={16} />
                 </div>
-                <ArrowUpRight size={13} style={{ color: '#cbd5e1' }} />
+                <ArrowUpRight size={13} className="text-muted-foreground/50" />
               </div>
-              <p className="text-2xl font-extrabold text-[#0f172a] leading-none">
+              <p className="text-2xl font-extrabold text-foreground leading-none">
                 {s.noCounter ? s.value : <AnimatedNum value={s.value} />}
               </p>
-              <p className="text-xs font-semibold text-[#64748b] mt-1">{s.label}</p>
-              <p className="text-[10px] text-[#94a3b8] mt-0.5">{s.sub}</p>
+              <p className="text-xs font-semibold text-muted-foreground mt-1">{s.label}</p>
+              <p className="text-[10px] text-muted-foreground/70 mt-0.5">{s.sub}</p>
             </motion.div>
           );
         })}
@@ -285,81 +230,64 @@ const Dashboard = () => {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.2 }}
-            className="rounded-2xl overflow-hidden"
-            style={{ background: '#fff', border: '1px solid #f1f5f9', boxShadow: '0 2px 8px rgba(15,23,42,0.04)' }}
+            className="rounded-xl overflow-hidden bg-card border border-border shadow-sm"
           >
-            <div className="flex items-center justify-between px-5 py-4"
-              style={{ borderBottom: '1px solid #f8fafc' }}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <div className="flex items-center gap-2">
-                <FileText size={15} style={{ color: '#7c3aed' }} />
-                <h2 className="text-sm font-bold text-[#0f172a]">Active Tenders</h2>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg"
-                  style={{ background: '#f5f3ff', color: '#7c3aed' }}>{activeTenders}</span>
+                <FileText size={15} className="text-primary" />
+                <h2 className="text-sm font-bold text-foreground">Active Tenders</h2>
+                <Badge>{activeTenders}</Badge>
               </div>
               {isAdmin && (
-                <Link to="/create-tender"
-                  className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl transition-all text-white"
-                  style={{ background: '#7c3aed' }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#6d28d9'}
-                  onMouseLeave={e => e.currentTarget.style.background = '#7c3aed'}>
-                  <Plus size={12} /> New Tender
-                </Link>
+                <Button size="sm" asChild>
+                  <Link to="/create-tender" className="no-underline">
+                    <Plus size={12} /> New Tender
+                  </Link>
+                </Button>
               )}
             </div>
 
             {recentTenders.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 gap-2">
-                <FileText size={28} style={{ color: '#e2e8f0' }} />
-                <p className="text-sm text-[#94a3b8] font-medium">No tenders yet</p>
+                <FileText size={28} className="text-muted-foreground/30" />
+                <p className="text-sm text-muted-foreground font-medium">No tenders yet</p>
               </div>
             ) : (
-              <div className="divide-y" style={{ borderColor: '#f8fafc' }}>
+              <div className="divide-y divide-border">
                 {recentTenders.map((t, i) => {
                   const isClosed = t.deadline && new Date() > new Date(t.deadline);
                   const approvalStatus = t.approval_status || 'approved';
+                  const approvalVariant = approvalStatus === 'approved' ? 'success'
+                    : approvalStatus === 'pending' ? 'warning'
+                    : approvalStatus === 'rejected' ? 'destructive' : 'secondary';
+                  const approvalLabel = approvalStatus === 'approved' ? 'Published'
+                    : approvalStatus === 'pending' ? 'Pending'
+                    : approvalStatus === 'rejected' ? 'Rejected' : 'Draft';
                   return (
                     <motion.div
                       key={t.id}
                       initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3, delay: 0.25 + i * 0.05 }}
-                      className="flex items-center justify-between px-5 py-3.5 transition-all cursor-pointer"
-                      style={{ gap: 12 }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      className="flex items-center justify-between gap-3 px-5 py-3.5 cursor-pointer transition-colors hover:bg-accent/50"
                       onClick={() => navigate(isSuperAdmin ? `/super-admin/tenders/${t.id}` : `/tenders/${t.id}`)}
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-                          style={{ background: isClosed ? '#f1f5f9' : '#f5f3ff' }}>
-                          <FileText size={13} style={{ color: isClosed ? '#94a3b8' : '#7c3aed' }} />
+                        <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center shrink-0', isClosed ? 'bg-muted' : 'bg-primary/10')}>
+                          <FileText size={13} className={isClosed ? 'text-muted-foreground' : 'text-primary'} />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold text-[#0f172a] truncate">{t.title}</p>
-                          <p className="text-[10px] text-[#94a3b8] mt-0.5 flex items-center gap-1">
+                          <p className="text-sm font-semibold text-foreground truncate">{t.title}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
                             <Clock size={9} />
                             {t.deadline ? new Date(t.deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'No deadline'}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg"
-                          style={{
-                            background: isClosed ? '#f1f5f9' : '#f0fdf4',
-                            color: isClosed ? '#94a3b8' : '#10b981',
-                          }}>
-                          {isClosed ? 'Closed' : 'Open'}
-                        </span>
-                        {(isAdmin || isSuperAdmin) && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg"
-                            style={{
-                              background: approvalStatus === 'approved' ? '#f0fdf4' : approvalStatus === 'pending' ? '#fffbeb' : approvalStatus === 'rejected' ? '#fef2f2' : '#f8fafc',
-                              color: approvalStatus === 'approved' ? '#10b981' : approvalStatus === 'pending' ? '#d97706' : approvalStatus === 'rejected' ? '#ef4444' : '#94a3b8',
-                            }}>
-                            {approvalStatus === 'approved' ? 'Published' : approvalStatus === 'pending' ? 'Pending' : approvalStatus === 'rejected' ? 'Rejected' : 'Draft'}
-                          </span>
-                        )}
-                        <ChevronRight size={13} style={{ color: '#cbd5e1' }} />
+                        <Badge variant={isClosed ? 'secondary' : 'success'}>{isClosed ? 'Closed' : 'Open'}</Badge>
+                        {(isAdmin || isSuperAdmin) && <Badge variant={approvalVariant}>{approvalLabel}</Badge>}
+                        <ChevronRight size={13} className="text-muted-foreground/50" />
                       </div>
                     </motion.div>
                   );
@@ -368,11 +296,8 @@ const Dashboard = () => {
             )}
 
             {tenders.length > 5 && (
-              <div className="px-5 py-3" style={{ borderTop: '1px solid #f8fafc' }}>
-                <Link to="/tenders" className="text-xs font-semibold transition-colors"
-                  style={{ color: '#7c3aed' }}
-                  onMouseEnter={e => e.currentTarget.style.color = '#6d28d9'}
-                  onMouseLeave={e => e.currentTarget.style.color = '#7c3aed'}>
+              <div className="px-5 py-3 border-t border-border">
+                <Link to="/tenders" className="text-xs font-semibold text-primary hover:text-primary/80 no-underline">
                   View all {tenders.length} tenders →
                 </Link>
               </div>
@@ -384,19 +309,16 @@ const Dashboard = () => {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.3 }}
-            className="rounded-2xl overflow-hidden"
-            style={{ background: '#fff', border: '1px solid #f1f5f9', boxShadow: '0 2px 8px rgba(15,23,42,0.04)' }}
+            className="rounded-xl overflow-hidden bg-card border border-border shadow-sm"
           >
-            <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid #f8fafc' }}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <div className="flex items-center gap-2">
-                <BarChart3 size={15} style={{ color: '#0ea5e9' }} />
-                <h2 className="text-sm font-bold text-[#0f172a]">Recent Proposals</h2>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg"
-                  style={{ background: '#f0f9ff', color: '#0ea5e9' }}>{totalProposals}</span>
+                <BarChart3 size={15} className="text-sky-600" />
+                <h2 className="text-sm font-bold text-foreground">Recent Proposals</h2>
+                <Badge className="bg-sky-50 text-sky-600 border-transparent">{totalProposals}</Badge>
               </div>
               {isAdmin && (
-                <Link to="/rankings" className="inline-flex items-center gap-1 text-xs font-semibold transition-colors"
-                  style={{ color: '#7c3aed' }}>
+                <Link to="/rankings" className="inline-flex items-center gap-1 text-xs font-semibold text-primary no-underline">
                   <Trophy size={12} /> Leaderboard
                 </Link>
               )}
@@ -404,47 +326,40 @@ const Dashboard = () => {
 
             {recentProposals.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 gap-2">
-                <BarChart3 size={24} style={{ color: '#e2e8f0' }} />
-                <p className="text-sm text-[#94a3b8] font-medium">No proposals yet</p>
+                <BarChart3 size={24} className="text-muted-foreground/30" />
+                <p className="text-sm text-muted-foreground font-medium">No proposals yet</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr style={{ background: '#fafafa', borderBottom: '1px solid #f1f5f9' }}>
-                      <th className="text-left px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-[#94a3b8]">Supplier</th>
-                      <th className="text-left px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-[#94a3b8]">Tender</th>
-                      <th className="text-left px-3 py-3 text-[10px] font-bold uppercase tracking-wider text-[#94a3b8]">Status</th>
-                      {isAdmin && <th className="text-right px-5 py-3 text-[10px] font-bold uppercase tracking-wider text-[#94a3b8]">Score</th>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentProposals.map((p, i) => {
-                      const score = p.score ?? null;
-                      const scoreColor = score == null ? '#94a3b8' : score >= 80 ? '#10b981' : score >= 50 ? '#f59e0b' : '#ef4444';
-                      return (
-                        <tr key={p.id}
-                          className="transition-all cursor-pointer"
-                          style={{ borderBottom: '1px solid #f8fafc' }}
-                          onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                          onClick={() => navigate(`/proposals/${p.id}`)}>
-                          <td className="px-5 py-3 font-semibold text-[#0f172a]">
-                            {p.supplier_name || `Supplier #${p.supplier_id}`}
-                          </td>
-                          <td className="px-3 py-3 text-[#64748b]">#{p.tender_id}</td>
-                          <td className="px-3 py-3"><StatusBadge status={p.status} /></td>
-                          {isAdmin && (
-                            <td className="px-5 py-3 text-right font-bold" style={{ color: scoreColor }}>
-                              {score != null ? `${score.toFixed(0)}%` : '—'}
-                            </td>
-                          )}
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/40 hover:bg-muted/40">
+                    <TableHead>Supplier</TableHead>
+                    <TableHead>Tender</TableHead>
+                    <TableHead>Status</TableHead>
+                    {isAdmin && <TableHead className="text-right">Score</TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentProposals.map((p) => {
+                    const score = p.score ?? null;
+                    const scoreClass = score == null ? 'text-muted-foreground' : score >= 80 ? 'text-success' : score >= 50 ? 'text-warning' : 'text-destructive';
+                    return (
+                      <TableRow key={p.id} className="cursor-pointer" onClick={() => navigate(`/proposals/${p.id}`)}>
+                        <TableCell className="font-semibold text-foreground">
+                          {p.supplier_name || `Supplier #${p.supplier_id}`}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">#{p.tender_id}</TableCell>
+                        <TableCell><StatusBadge status={p.status} /></TableCell>
+                        {isAdmin && (
+                          <TableCell className={cn('text-right font-bold', scoreClass)}>
+                            {score != null ? `${score.toFixed(0)}%` : '—'}
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             )}
           </motion.div>
         </div>
@@ -457,28 +372,26 @@ const Dashboard = () => {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.25 }}
-            className="rounded-2xl p-5"
-            style={{ background: '#fff', border: '1px solid #f1f5f9', boxShadow: '0 2px 8px rgba(15,23,42,0.04)' }}
+            className="rounded-xl p-5 bg-card border border-border shadow-sm"
           >
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg, #7c3aed, #a78bfa)' }}>
-                <Zap size={12} color="#fff" fill="#fff" />
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-primary">
+                <Zap size={12} className="text-primary-foreground" fill="currentColor" />
               </div>
-              <h3 className="text-sm font-bold text-[#0f172a]">AI Compliance Score</h3>
+              <h3 className="text-sm font-bold text-foreground">AI Compliance Score</h3>
             </div>
             <div className="flex justify-center">
-              <SemiGauge value={avgScore} max={100} />
+              <ScoreGauge score={avgScore} label="Avg Score" />
             </div>
             <div className="grid grid-cols-3 gap-2 mt-3">
               {[
-                { label: 'Approved', val: approvedProposals, color: '#10b981', bg: '#f0fdf4' },
-                { label: 'Pending',  val: pendingProposals,  color: '#f59e0b', bg: '#fffbeb' },
-                { label: 'Rejected', val: rejectedProposals, color: '#ef4444', bg: '#fef2f2' },
+                { label: 'Approved', val: approvedProposals, tone: 'text-success bg-success/10' },
+                { label: 'Pending', val: pendingProposals, tone: 'text-warning bg-warning/10' },
+                { label: 'Rejected', val: rejectedProposals, tone: 'text-destructive bg-destructive/10' },
               ].map(s => (
-                <div key={s.label} className="rounded-xl p-2.5 text-center" style={{ background: s.bg }}>
-                  <p className="text-base font-extrabold" style={{ color: s.color }}>{s.val}</p>
-                  <p className="text-[9px] font-semibold mt-0.5" style={{ color: s.color }}>{s.label}</p>
+                <div key={s.label} className={cn('rounded-lg p-2.5 text-center', s.tone)}>
+                  <p className="text-base font-extrabold">{s.val}</p>
+                  <p className="text-[9px] font-semibold mt-0.5">{s.label}</p>
                 </div>
               ))}
             </div>
@@ -489,33 +402,30 @@ const Dashboard = () => {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.35 }}
-            className="rounded-2xl p-5"
-            style={{ background: '#fff', border: '1px solid #f1f5f9', boxShadow: '0 2px 8px rgba(15,23,42,0.04)' }}
+            className="rounded-xl p-5 bg-card border border-border shadow-sm"
           >
-            <h3 className="text-sm font-bold text-[#0f172a] mb-4">Quick Actions</h3>
+            <h3 className="text-sm font-bold text-foreground mb-4">Quick Actions</h3>
             <div className="space-y-2">
               {[
-                isAdmin && { label: 'Create Tender', desc: 'Add new procurement', to: '/create-tender', icon: Plus, color: '#7c3aed', bg: '#f5f3ff' },
-                { label: 'View Tenders', desc: 'Browse all tenders', to: '/tenders', icon: FileText, color: '#0ea5e9', bg: '#f0f9ff' },
-                isAdmin && { label: 'Rankings', desc: 'AI leaderboard', to: '/rankings', icon: Trophy, color: '#f59e0b', bg: '#fffbeb' },
+                isAdmin && { label: 'Create Tender', desc: 'Add new procurement', to: '/create-tender', icon: Plus, tone: 'text-primary bg-primary/10' },
+                { label: 'View Tenders', desc: 'Browse all tenders', to: '/tenders', icon: FileText, tone: 'text-sky-600 bg-sky-50' },
+                isAdmin && { label: 'Rankings', desc: 'AI leaderboard', to: '/rankings', icon: Trophy, tone: 'text-warning bg-warning/10' },
               ].filter(Boolean).map(action => {
                 const Icon = action.icon;
                 return (
-                  <Link key={action.to} to={action.to}
-                    className="flex items-center gap-3 p-3 rounded-xl transition-all"
-                    style={{ border: '1px solid #f1f5f9' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = action.bg; e.currentTarget.style.borderColor = 'transparent'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = '#f1f5f9'; }}
+                  <Link
+                    key={action.to}
+                    to={action.to}
+                    className="flex items-center gap-3 p-3 rounded-lg border border-border transition-colors hover:bg-accent hover:border-transparent no-underline"
                   >
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ background: action.bg }}>
-                      <Icon size={14} style={{ color: action.color }} />
+                    <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center shrink-0', action.tone)}>
+                      <Icon size={14} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-[#0f172a]">{action.label}</p>
-                      <p className="text-[10px] text-[#94a3b8]">{action.desc}</p>
+                      <p className="text-xs font-semibold text-foreground">{action.label}</p>
+                      <p className="text-[10px] text-muted-foreground">{action.desc}</p>
                     </div>
-                    <ChevronRight size={13} style={{ color: '#cbd5e1' }} />
+                    <ChevronRight size={13} className="text-muted-foreground/50" />
                   </Link>
                 );
               })}
@@ -528,31 +438,31 @@ const Dashboard = () => {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.4 }}
-              className="rounded-2xl p-5"
-              style={{ background: 'linear-gradient(135deg, #0f0a1e, #1a0a3a)', border: '1px solid rgba(124,58,237,0.2)' }}
+              className="rounded-xl p-5 border border-primary/20"
+              style={{ background: 'linear-gradient(135deg, oklch(0.145 0 0), oklch(0.2 0.03 296.9))' }}
             >
               <div className="flex items-center gap-2 mb-4">
-                <Zap size={13} style={{ color: '#a78bfa' }} />
+                <Zap size={13} className="text-violet-300" />
                 <h3 className="text-sm font-bold text-white">Proposal Overview</h3>
               </div>
               {[
-                { label: 'Total Received', val: totalProposals, pct: 100 },
-                { label: 'Approved',       val: approvedProposals, pct: totalProposals ? (approvedProposals / totalProposals) * 100 : 0 },
-                { label: 'Under Review',   val: pendingProposals, pct: totalProposals ? (pendingProposals / totalProposals) * 100 : 0 },
-                { label: 'Rejected',       val: rejectedProposals, pct: totalProposals ? (rejectedProposals / totalProposals) * 100 : 0 },
+                { label: 'Total Received', val: totalProposals, pct: 100, chart: 'var(--chart-1)' },
+                { label: 'Approved', val: approvedProposals, pct: totalProposals ? (approvedProposals / totalProposals) * 100 : 0, chart: 'var(--chart-2)' },
+                { label: 'Under Review', val: pendingProposals, pct: totalProposals ? (pendingProposals / totalProposals) * 100 : 0, chart: 'var(--chart-3)' },
+                { label: 'Rejected', val: rejectedProposals, pct: totalProposals ? (rejectedProposals / totalProposals) * 100 : 0, chart: 'var(--chart-4)' },
               ].map((row, i) => (
                 <div key={row.label} className="mb-3 last:mb-0">
                   <div className="flex justify-between mb-1">
-                    <span className="text-[11px] font-medium" style={{ color: 'rgba(255,255,255,0.55)' }}>{row.label}</span>
+                    <span className="text-[11px] font-medium text-white/55">{row.label}</span>
                     <span className="text-[11px] font-bold text-white">{row.val}</span>
                   </div>
-                  <div className="h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.07)' }}>
+                  <div className="h-1.5 rounded-full bg-white/10">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${row.pct}%` }}
                       transition={{ duration: 0.8, delay: 0.5 + i * 0.1 }}
                       className="h-full rounded-full"
-                      style={{ background: i === 0 ? '#7c3aed' : i === 1 ? '#10b981' : i === 2 ? '#f59e0b' : '#ef4444' }}
+                      style={{ background: row.chart }}
                     />
                   </div>
                 </div>

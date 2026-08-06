@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, LayoutDashboard, Zap } from 'lucide-react';
+import { Menu, X, LayoutDashboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Logo from './Logo';
+import { Button } from './ui/button';
+import { ThemeToggle } from './theme-toggle';
+import { cn } from '../lib/utils';
 
 const PublicNavbar = () => {
   const [open, setOpen] = useState(false);
@@ -37,33 +41,16 @@ const PublicNavbar = () => {
 
   return (
     <header
-      className="sticky top-0 z-50 transition-all duration-300"
-      style={{
-        background: scrolled ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,1)',
-        backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid #f3f4f6',
-        boxShadow: scrolled ? '0 4px 24px rgba(15,10,30,.06)' : 'none',
-      }}
+      className={cn(
+        'sticky top-0 z-50 border-b border-border backdrop-blur-xl transition-shadow duration-300',
+        scrolled ? 'bg-background/95 shadow-sm' : 'bg-background'
+      )}
     >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
 
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 shrink-0 group">
-            <div
-              className="group-hover:scale-110 transition-transform duration-200 flex items-center justify-center"
-              style={{
-                width: 34, height: 34, borderRadius: 10,
-                background: 'linear-gradient(135deg,#7c3aed,#a78bfa)',
-                boxShadow: '0 4px 14px rgba(124,58,237,.3)',
-              }}
-            >
-              <Zap size={16} color="#fff" fill="#fff" />
-            </div>
-            <div className="leading-tight">
-              <p className="text-sm font-bold text-[#0f172a] tracking-tight">NPC Procurement</p>
-              <p className="text-[10px] text-[#9ca3af] font-medium">Federal Government of Somalia</p>
-            </div>
+          <Link to="/" className="group no-underline">
+            <Logo className="group-hover:opacity-80 transition-opacity" />
           </Link>
 
           {/* Desktop nav */}
@@ -72,17 +59,16 @@ const PublicNavbar = () => {
               <Link
                 key={to}
                 to={to}
-                className="relative px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200"
-                style={{ color: isActive(to) ? '#7c3aed' : '#6b7280' }}
-                onMouseEnter={e => { if (!isActive(to)) { e.currentTarget.style.color = '#374151'; e.currentTarget.style.background = '#f9fafb'; } }}
-                onMouseLeave={e => { if (!isActive(to)) { e.currentTarget.style.color = '#6b7280'; e.currentTarget.style.background = 'transparent'; } }}
+                className={cn(
+                  'relative px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 no-underline',
+                  isActive(to) ? 'text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                )}
               >
                 {label}
                 {isActive(to) && (
                   <motion.div
                     layoutId="nav-pill-pub"
-                    className="absolute inset-0 rounded-xl -z-10"
-                    style={{ background: '#f5f3ff' }}
+                    className="absolute inset-0 rounded-lg -z-10 bg-primary/10"
                     transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
                   />
                 )}
@@ -92,32 +78,21 @@ const PublicNavbar = () => {
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-2">
+            <ThemeToggle />
             {token ? (
-              <Link
-                to={dashboardPath()}
-                className="inline-flex items-center gap-2 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all duration-200"
-                style={{ background: '#7c3aed', boxShadow: '0 4px 14px rgba(124,58,237,.3)' }}
-                onMouseEnter={e => e.currentTarget.style.background = '#6d28d9'}
-                onMouseLeave={e => e.currentTarget.style.background = '#7c3aed'}
-              >
-                <LayoutDashboard size={14} /> Dashboard
-              </Link>
+              <Button asChild>
+                <Link to={dashboardPath()} className="no-underline">
+                  <LayoutDashboard size={14} /> Dashboard
+                </Link>
+              </Button>
             ) : (
               <>
-                <Link
-                  to="/login"
-                  className="px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200"
-                  style={{ color: '#6b7280' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#f5f3ff'; e.currentTarget.style.color = '#7c3aed'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#6b7280'; }}
-                >Sign In</Link>
-                <Link
-                  to="/login"
-                  className="inline-flex items-center gap-1.5 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all duration-200"
-                  style={{ background: '#0f172a' }}
-                  onMouseEnter={e => e.currentTarget.style.background = '#1e293b'}
-                  onMouseLeave={e => e.currentTarget.style.background = '#0f172a'}
-                >Get Started →</Link>
+                <Button variant="ghost" asChild>
+                  <Link to="/login" className="no-underline">Sign In</Link>
+                </Button>
+                <Button variant="secondary" className="bg-foreground text-background hover:bg-foreground/90" asChild>
+                  <Link to="/login" className="no-underline">Get Started →</Link>
+                </Button>
               </>
             )}
           </div>
@@ -125,8 +100,7 @@ const PublicNavbar = () => {
           {/* Mobile menu button */}
           <button
             onClick={() => setOpen(!open)}
-            className="md:hidden p-2 rounded-xl transition-all"
-            style={{ color: '#6b7280' }}
+            className="md:hidden p-2 rounded-lg text-muted-foreground"
           >
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
@@ -151,8 +125,7 @@ const PublicNavbar = () => {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.22, ease: 'easeInOut' }}
-            style={{ borderTop: '1px solid #f3f4f6', background: '#fff', overflow: 'hidden' }}
-            className="md:hidden px-4 py-3 space-y-1"
+            className="md:hidden px-4 py-3 space-y-1 border-t border-border bg-background overflow-hidden"
           >
             {navLinks.map(({ to, label }, i) => (
               <motion.div
@@ -163,33 +136,32 @@ const PublicNavbar = () => {
               >
                 <Link
                   to={to}
-                  className="block px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
-                  style={{
-                    background: isActive(to) ? '#f5f3ff' : 'transparent',
-                    color: isActive(to) ? '#7c3aed' : '#6b7280',
-                  }}
+                  className={cn(
+                    'block px-4 py-2.5 rounded-lg text-sm font-medium no-underline',
+                    isActive(to) ? 'bg-primary/10 text-primary' : 'text-muted-foreground'
+                  )}
                 >{label}</Link>
               </motion.div>
             ))}
-            <div style={{ paddingTop: 8, borderTop: '1px solid #f3f4f6' }} className="flex flex-col gap-2">
+            <div className="pt-2 border-t border-border flex flex-col gap-2">
+              <div className="flex items-center justify-between px-1 pb-1">
+                <span className="text-xs font-semibold text-muted-foreground">Theme</span>
+                <ThemeToggle />
+              </div>
               {token ? (
-                <Link
-                  to={dashboardPath()}
-                  className="flex items-center justify-center gap-2 text-white text-sm font-semibold px-4 py-2.5 rounded-xl"
-                  style={{ background: '#7c3aed' }}
-                >
-                  <LayoutDashboard size={14} /> Dashboard
-                </Link>
+                <Button asChild className="w-full">
+                  <Link to={dashboardPath()} className="no-underline">
+                    <LayoutDashboard size={14} /> Dashboard
+                  </Link>
+                </Button>
               ) : (
                 <>
-                  <Link to="/login"
-                    className="block text-center px-4 py-2.5 rounded-xl text-sm font-semibold"
-                    style={{ border: '1px solid #e5e7eb', color: '#6b7280' }}
-                  >Sign In</Link>
-                  <Link to="/login"
-                    className="block text-center text-white text-sm font-semibold px-4 py-2.5 rounded-xl"
-                    style={{ background: '#0f172a' }}
-                  >Get Started →</Link>
+                  <Button variant="outline" asChild className="w-full">
+                    <Link to="/login" className="no-underline">Sign In</Link>
+                  </Button>
+                  <Button className="w-full bg-foreground text-background hover:bg-foreground/90" asChild>
+                    <Link to="/login" className="no-underline">Get Started →</Link>
+                  </Button>
                 </>
               )}
             </div>

@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { UploadCloud, FileText, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { cn } from '../lib/utils';
 
 const UploadCard = ({ onFileSelect, file, error, acceptedType = 'PDF' }) => {
   const fileInputRef = useRef(null);
@@ -29,42 +30,43 @@ const UploadCard = ({ onFileSelect, file, error, acceptedType = 'PDF' }) => {
       onDragEnter={handleDrag} onDragOver={handleDrag}
       onDragLeave={handleDrag} onDrop={handleDrop}
       onClick={() => fileInputRef.current.click()}
-      className={`relative flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all duration-200 ${
+      className={cn(
+        'relative flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200',
         dragActive
-          ? 'border-[#2a7d7b] bg-[#f0f7f7] scale-[1.01]'
+          ? 'border-primary bg-primary/5 scale-[1.01]'
           : file
-            ? 'border-[#2a7d7b] bg-[#e8f4f4]/40'
-            : 'border-[#d8eaea] hover:border-[#2a7d7b] hover:bg-[#f0f7f7]/50'
-      }`}
+            ? 'border-primary bg-primary/5'
+            : 'border-border hover:border-primary/50 hover:bg-accent/50'
+      )}
     >
       <input ref={fileInputRef} type="file" accept=".pdf,.docx,.doc" className="hidden" onChange={handleChange} />
 
-      <div className={`flex h-14 w-14 items-center justify-center rounded-2xl mb-4 ${file ? 'bg-[#e8f4f4]' : 'bg-[#f0f7f7]'}`}>
+      <div className={cn('flex h-14 w-14 items-center justify-center rounded-xl mb-4', file ? 'bg-primary/10' : 'bg-muted')}>
         {file
-          ? <CheckCircle2 className="h-7 w-7 text-[#2a7d7b]" />
-          : <UploadCloud className="h-7 w-7 text-[#8aacac]" />
+          ? <CheckCircle2 className="h-7 w-7 text-primary" />
+          : <UploadCloud className="h-7 w-7 text-muted-foreground" />
         }
       </div>
 
       {file ? (
         <div className="space-y-1">
-          <p className="text-sm font-semibold text-[#1a3a3a] flex items-center justify-center gap-1.5">
-            <FileText size={15} className="text-[#2a7d7b]" /> {file.name}
+          <p className="text-sm font-semibold text-foreground flex items-center justify-center gap-1.5">
+            <FileText size={15} className="text-primary" /> {file.name}
           </p>
-          <p className="text-xs text-[#8aacac]">{(file.size / (1024 * 1024)).toFixed(2)} MB — Ready to submit</p>
+          <p className="text-xs text-muted-foreground">{(file.size / (1024 * 1024)).toFixed(2)} MB — Ready to submit</p>
         </div>
       ) : (
         <div className="space-y-1.5">
-          <p className="text-sm font-semibold text-[#1a3a3a]">
+          <p className="text-sm font-semibold text-foreground">
             Drop your {acceptedType} here, or{' '}
-            <span className="text-[#2a7d7b] underline underline-offset-2">browse files</span>
+            <span className="text-primary underline underline-offset-2">browse files</span>
           </p>
-          <p className="text-xs text-[#8aacac]">PDF or Word document accepted (max 50MB)</p>
+          <p className="text-xs text-muted-foreground">PDF or Word document accepted (max 50MB)</p>
         </div>
       )}
 
       {error && (
-        <div className="mt-4 flex items-center gap-1.5 text-xs font-medium text-red-600">
+        <div className="mt-4 flex items-center gap-1.5 text-xs font-medium text-destructive">
           <AlertTriangle size={14} /> {error}
         </div>
       )}

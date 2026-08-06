@@ -20,6 +20,8 @@ clearIfExpired();
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import PublicNavbar from './components/PublicNavbar';
+import { Toaster } from './components/ui/sonner';
+import { SidebarProvider, SidebarInset } from './components/ui/sidebar';
 
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -54,7 +56,7 @@ const getRole = () => {
 
 /* ─── Public layout ───────────────────────────────────────── */
 const PublicLayout = () => (
-  <div className="min-h-screen bg-white flex flex-col">
+  <div className="min-h-screen bg-background flex flex-col">
     <PublicNavbar />
     <Outlet />
   </div>
@@ -66,15 +68,15 @@ const AppLayout = () => {
   if (!token) return <Navigate to="/" replace />;
 
   return (
-    <div className="flex h-screen bg-[#f8fafc] overflow-hidden">
+    <SidebarProvider className="h-screen overflow-hidden bg-background">
       <Sidebar />
-      <div className="flex flex-col flex-1 overflow-hidden min-w-0">
+      <SidebarInset>
         <Navbar />
         <main className="flex-1 overflow-y-auto overflow-x-hidden p-5 md:p-6 lg:p-8">
           <Outlet />
         </main>
-      </div>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 };
 
@@ -99,6 +101,7 @@ const CatchAll = () => {
 function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-right" richColors />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/change-password" element={<ChangePassword />} />
