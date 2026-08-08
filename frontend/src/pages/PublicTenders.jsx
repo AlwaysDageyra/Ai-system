@@ -24,19 +24,19 @@ const SECTORS = [
 
 /* Tailwind-scale tone per sector — text/bg/border/dot all derived from one class group */
 const SECTOR_TONES = {
-  'Food Security & Agriculture': { text: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', solid: 'bg-emerald-600' },
-  'ICT & Technology': { text: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20', solid: 'bg-primary' },
-  'Education & Training': { text: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200', solid: 'bg-blue-600' },
-  'Engineering & Infrastructure': { text: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200', solid: 'bg-amber-600' },
-  'Energy & Power': { text: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200', solid: 'bg-orange-600' },
-  'Office Supplies & Printing': { text: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200', solid: 'bg-slate-500' },
-  'Consultancy & Research': { text: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200', solid: 'bg-indigo-600' },
-  'Logistics & Flight Rental': { text: 'text-sky-600', bg: 'bg-sky-50', border: 'border-sky-200', solid: 'bg-sky-600' },
-  'Healthcare & Insurance': { text: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-200', solid: 'bg-rose-600' },
-  'General Procurement': { text: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border', solid: 'bg-muted-foreground' },
+  'Food Security & Agriculture': { text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/15', border: 'border-emerald-200 dark:border-emerald-500/30', solid: 'bg-emerald-600 dark:bg-emerald-500' },
+  'ICT & Technology': { text: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20', solid: 'bg-primary', solidText: 'text-primary-foreground' },
+  'Education & Training': { text: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-500/15', border: 'border-blue-200 dark:border-blue-500/30', solid: 'bg-blue-600 dark:bg-blue-500' },
+  'Engineering & Infrastructure': { text: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-500/15', border: 'border-amber-200 dark:border-amber-500/30', solid: 'bg-amber-600 dark:bg-amber-500' },
+  'Energy & Power': { text: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-500/15', border: 'border-orange-200 dark:border-orange-500/30', solid: 'bg-orange-600 dark:bg-orange-500' },
+  'Office Supplies & Printing': { text: 'text-slate-600 dark:text-slate-300', bg: 'bg-slate-50 dark:bg-slate-500/15', border: 'border-slate-200 dark:border-slate-500/30', solid: 'bg-slate-500' },
+  'Consultancy & Research': { text: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-500/15', border: 'border-indigo-200 dark:border-indigo-500/30', solid: 'bg-indigo-600 dark:bg-indigo-500' },
+  'Logistics & Flight Rental': { text: 'text-sky-600 dark:text-sky-400', bg: 'bg-sky-50 dark:bg-sky-500/15', border: 'border-sky-200 dark:border-sky-500/30', solid: 'bg-sky-600 dark:bg-sky-500' },
+  'Healthcare & Insurance': { text: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-500/15', border: 'border-rose-200 dark:border-rose-500/30', solid: 'bg-rose-600 dark:bg-rose-500' },
+  'General Procurement': { text: 'text-muted-foreground', bg: 'bg-muted', border: 'border-border', solid: 'bg-muted-foreground', solidText: 'text-background' },
 };
 const DEFAULT_TONE = SECTOR_TONES['General Procurement'];
-const ALL_TONE = { text: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20', solid: 'bg-primary' };
+const ALL_TONE = { text: 'text-primary', bg: 'bg-primary/10', border: 'border-primary/20', solid: 'bg-primary', solidText: 'text-primary-foreground' };
 
 const daysLeft = (deadline) => {
   if (!deadline) return null;
@@ -89,14 +89,14 @@ const PublicTenders = () => {
     <div className="bg-background min-h-screen">
 
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-primary/5 to-emerald-50">
+      <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-primary/5 to-emerald-50 dark:from-blue-500/10 dark:via-primary/10 dark:to-emerald-500/10">
         <div className="pointer-events-none absolute -top-20 -right-20 w-80 h-80 rounded-full bg-primary/10" />
-        <div className="pointer-events-none absolute -bottom-12 left-[20%] w-52 h-52 rounded-full bg-blue-200/30" />
-        <div className="pointer-events-none absolute top-[10%] -left-16 w-44 h-44 rounded-full bg-emerald-200/30" />
+        <div className="pointer-events-none absolute -bottom-12 left-[20%] w-52 h-52 rounded-full bg-blue-200/30 dark:bg-blue-500/10" />
+        <div className="pointer-events-none absolute top-[10%] -left-16 w-44 h-44 rounded-full bg-emerald-200/30 dark:bg-emerald-500/10" />
 
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
-            <span className="inline-flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full mb-5 bg-blue-100 border border-blue-200 text-blue-600">
+            <span className="inline-flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full mb-5 bg-blue-100 dark:bg-blue-500/15 border border-blue-200 dark:border-blue-500/30 text-blue-600 dark:text-blue-400">
               <Briefcase size={11} /> Public Register
             </span>
             <h1 className="text-4xl sm:text-5xl font-extrabold mb-4 text-foreground tracking-tight leading-tight">
@@ -120,9 +120,9 @@ const PublicTenders = () => {
 
             <div className="flex flex-wrap gap-4 mt-8">
               {[
-                { n: `${tenders.length || '—'}`, label: 'Active tenders', tone: 'text-blue-600' },
+                { n: `${tenders.length || '—'}`, label: 'Active tenders', tone: 'text-blue-600 dark:text-blue-400' },
                 { n: '7', label: 'Sectors covered', tone: 'text-primary' },
-                { n: '72h', label: 'Avg. evaluation', tone: 'text-emerald-600' },
+                { n: '72h', label: 'Avg. evaluation', tone: 'text-emerald-600 dark:text-emerald-400' },
               ].map(({ n, label, tone }) => (
                 <div key={label} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-card border border-border shadow-sm">
                   <span className={cn('text-base font-extrabold', tone)}>{n}</span>
@@ -146,7 +146,7 @@ const PublicTenders = () => {
                 onClick={() => setSector(s)}
                 className={cn(
                   'shrink-0 px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 border',
-                  active ? cn(tone.solid, 'text-white border-transparent shadow-sm') : 'bg-card text-muted-foreground border-border hover:border-primary/30'
+                  active ? cn(tone.solid, tone.solidText || 'text-white', 'border-transparent shadow-sm') : 'bg-card text-muted-foreground border-border hover:border-primary/30'
                 )}
               >{s}</button>
             );

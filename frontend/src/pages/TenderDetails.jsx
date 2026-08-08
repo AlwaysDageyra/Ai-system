@@ -247,7 +247,7 @@ const TenderDetails = () => {
       {/* ── Hero card ── */}
       <div className="rounded-xl overflow-hidden bg-card border border-primary/15 shadow-md">
 
-        <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg, var(--primary), oklch(0.7 0.15 296.9), #38bdf8)' }} />
+        <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg, var(--primary), #38bdf8)' }} />
 
         <div className="px-7 pt-6 pb-5">
           <div className="flex items-start justify-between gap-4 mb-4">
@@ -438,13 +438,13 @@ const TenderDetails = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             className="rounded-xl overflow-hidden border border-primary/20 shadow-md">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-primary/15" style={{ background: 'linear-gradient(135deg, oklch(0.145 0 0), oklch(0.22 0.05 275))' }}>
+            <div className="flex items-center justify-between px-6 py-4 bg-muted/40 border-b border-border">
               <div className="flex items-center gap-2">
-                <Pencil size={14} className="text-violet-300" />
-                <span className="text-sm font-bold text-white">Edit Tender</span>
+                <Pencil size={14} className="text-primary" />
+                <span className="text-sm font-bold text-foreground">Edit Tender</span>
               </div>
               <button onClick={() => setEditing(false)}
-                className="p-1.5 rounded-lg text-white/40 transition-colors hover:bg-white/10 hover:text-white">
+                className="p-1.5 rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
                 <X size={14} />
               </button>
             </div>

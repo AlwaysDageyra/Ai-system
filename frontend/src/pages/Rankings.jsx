@@ -39,7 +39,7 @@ const STAGE_LABELS = ['Submitted', 'Under Review', 'Evaluated', 'Ranked'];
 const STAGE_TONE = ['bg-muted text-muted-foreground', 'bg-sky-50 text-sky-600', 'bg-warning/10 text-warning', 'bg-primary/10 text-primary'];
 
 const PODIUM_TONE = [
-  { gradient: 'linear-gradient(135deg, var(--primary), oklch(0.7 0.15 296.9))', medal: '🥈' },
+  { gradient: 'linear-gradient(135deg, #94a3b8, #cbd5e1)', medal: '🥈' },
   { gradient: 'linear-gradient(135deg, #f59e0b, #fbbf24)', medal: '🥇' },
   { gradient: 'linear-gradient(135deg, #d97706, #f59e0b)', medal: '🥉' },
 ];
@@ -298,15 +298,15 @@ const Rankings = () => {
       {/* ── SCREENING phase ── */}
       {phase === 'screening' && (
         <div className="space-y-4">
-          <div className="rounded-xl p-6 text-center space-y-3 border border-primary/20" style={{ background: 'linear-gradient(135deg, oklch(0.145 0 0), oklch(0.2 0.03 296.9))' }}>
-            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold bg-violet-400/20 text-violet-300 border border-violet-400/30">
-              <Zap size={10} className="animate-pulse text-amber-400" />
+          <div className="rounded-xl p-6 text-center space-y-3 bg-card border border-primary/20 shadow-sm">
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20">
+              <Zap size={10} className="animate-pulse text-amber-500" />
               AI Evaluation Engine Active
             </span>
             <div className="h-7 flex items-center justify-center overflow-hidden">
-              <p key={msgIdx} className="msg-fade text-base font-bold text-white leading-tight">{MESSAGES[msgIdx]}</p>
+              <p key={msgIdx} className="msg-fade text-base font-bold text-foreground leading-tight">{MESSAGES[msgIdx]}</p>
             </div>
-            <p className="text-xs text-white/35">{tenderTitle}</p>
+            <p className="text-xs text-muted-foreground">{tenderTitle}</p>
           </div>
 
           <div className="rounded-xl p-5 space-y-3 bg-card border border-border">
@@ -315,8 +315,8 @@ const Rankings = () => {
               <span className="text-sm font-bold text-foreground tabular-nums">{Math.round(progress)}%</span>
             </div>
             <div className="h-2 rounded-full overflow-hidden bg-muted">
-              <div className="h-full rounded-full transition-all duration-75 linear"
-                style={{ width: `${progress}%`, background: 'linear-gradient(90deg, var(--primary), oklch(0.7 0.15 296.9))' }} />
+              <div className="h-full rounded-full transition-all duration-75 linear bg-primary"
+                style={{ width: `${progress}%` }} />
             </div>
             <p className="text-xs text-muted-foreground">
               {progress < 100
@@ -383,8 +383,8 @@ const Rankings = () => {
       {phase === 'complete' && (
         <div className="space-y-5">
           {top3.length > 0 && (
-            <div className="rounded-xl p-6 border border-primary/20" style={{ background: 'linear-gradient(135deg, oklch(0.145 0 0), oklch(0.2 0.03 296.9))' }}>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-center mb-6 text-violet-300/60">
+            <div className="rounded-xl p-6 bg-card border border-primary/20 shadow-sm">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-center mb-6 text-primary/70">
                 Top Performers — {tenderTitle}
               </p>
               <div className="flex items-end justify-center gap-4 max-w-xs mx-auto">
@@ -393,10 +393,10 @@ const Rankings = () => {
                   return (
                     <div key={i} className="flex flex-col items-center gap-2 flex-1">
                       <div className="text-center w-full">
-                        <p className="text-xs font-semibold truncate text-white/60">
+                        <p className="text-xs font-semibold truncate text-muted-foreground">
                           {slot.entry.supplier_name}
                         </p>
-                        <p className="text-base font-extrabold text-white">{slot.entry.score.toFixed(0)}%</p>
+                        <p className="text-base font-extrabold text-foreground">{slot.entry.score.toFixed(0)}%</p>
                       </div>
                       <motion.div
                         initial={{ height: 0 }}

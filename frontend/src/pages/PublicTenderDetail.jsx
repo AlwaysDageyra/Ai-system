@@ -23,15 +23,15 @@ const FadeUp = ({ children, delay = 0, className = '' }) => (
 );
 
 const SECTOR_TONES = {
-  'Food Security & Agriculture': { text: 'text-emerald-600', bg: 'bg-emerald-50' },
+  'Food Security & Agriculture': { text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/15' },
   'ICT & Technology': { text: 'text-primary', bg: 'bg-primary/10' },
-  'Education & Training': { text: 'text-blue-600', bg: 'bg-blue-50' },
-  'Engineering & Infrastructure': { text: 'text-amber-600', bg: 'bg-amber-50' },
-  'Energy & Power': { text: 'text-orange-600', bg: 'bg-orange-50' },
-  'Office Supplies & Printing': { text: 'text-slate-600', bg: 'bg-slate-50' },
-  'Consultancy & Research': { text: 'text-indigo-600', bg: 'bg-indigo-50' },
-  'Logistics & Flight Rental': { text: 'text-sky-600', bg: 'bg-sky-50' },
-  'Healthcare & Insurance': { text: 'text-rose-600', bg: 'bg-rose-50' },
+  'Education & Training': { text: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-500/15' },
+  'Engineering & Infrastructure': { text: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-500/15' },
+  'Energy & Power': { text: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-500/15' },
+  'Office Supplies & Printing': { text: 'text-slate-600 dark:text-slate-400', bg: 'bg-slate-50 dark:bg-slate-500/15' },
+  'Consultancy & Research': { text: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-500/15' },
+  'Logistics & Flight Rental': { text: 'text-sky-600 dark:text-sky-400', bg: 'bg-sky-50 dark:bg-sky-500/15' },
+  'Healthcare & Insurance': { text: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-500/15' },
   'General Procurement': { text: 'text-muted-foreground', bg: 'bg-muted' },
 };
 const DEFAULT_TONE = SECTOR_TONES['General Procurement'];
@@ -93,14 +93,14 @@ const PublicTenderDetail = () => {
     <div className="bg-background min-h-screen">
 
       {/* Hero */}
-      <section className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, oklch(0.145 0 0), oklch(0.2 0.03 296.9))' }}>
+      <section className="relative overflow-hidden bg-card border-b border-border">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -top-[60px] -right-[60px] w-[400px] h-[400px] rounded-full opacity-20"
             style={{ background: 'radial-gradient(circle, var(--primary), transparent 65%)', filter: 'blur(60px)' }} />
         </div>
         <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-18">
           <motion.div initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }}>
-            <Link to="/browse" className="inline-flex items-center gap-1.5 text-xs font-semibold mb-6 text-white/35 hover:text-violet-300 no-underline transition-colors">
+            <Link to="/browse" className="inline-flex items-center gap-1.5 text-xs font-semibold mb-6 text-muted-foreground hover:text-primary no-underline transition-colors">
               <ArrowLeft size={13} /> All Tenders
             </Link>
           </motion.div>
@@ -109,15 +109,13 @@ const PublicTenderDetail = () => {
               {tender.sector && (
                 <span className={cn('text-xs font-bold px-3 py-1 rounded-lg', tone.bg, tone.text)}>{tender.sector}</span>
               )}
-              <Badge className={isOpen ? 'bg-emerald-500/15 text-emerald-400 border-transparent' : 'bg-white/10 text-white/40 border-transparent'}>
-                {isOpen ? '● Open' : 'Closed'}
-              </Badge>
+              <Badge variant={isOpen ? 'success' : 'secondary'}>{isOpen ? '● Open' : 'Closed'}</Badge>
             </div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-3 max-w-3xl text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold mb-3 max-w-3xl text-foreground tracking-tight">
               {tender.title}
             </h1>
             {tender.reference_number && (
-              <p className="text-xs text-white/25">Ref: {tender.reference_number}</p>
+              <p className="text-xs text-muted-foreground/70">Ref: {tender.reference_number}</p>
             )}
           </motion.div>
         </div>
@@ -177,13 +175,13 @@ const PublicTenderDetail = () => {
 
             {tender.instructions && (
               <FadeUp delay={0.1}>
-                <div className="rounded-xl overflow-hidden border border-amber-200 bg-amber-50">
-                  <div className="px-6 py-4 flex items-center gap-2 border-b border-amber-200">
-                    <AlertCircle size={14} className="text-amber-600" />
-                    <h2 className="text-sm font-bold text-amber-700">Submission Instructions</h2>
+                <div className="rounded-xl overflow-hidden border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10">
+                  <div className="px-6 py-4 flex items-center gap-2 border-b border-amber-200 dark:border-amber-500/30">
+                    <AlertCircle size={14} className="text-amber-600 dark:text-amber-400" />
+                    <h2 className="text-sm font-bold text-amber-700 dark:text-amber-400">Submission Instructions</h2>
                   </div>
                   <div className="px-6 py-5">
-                    <p className="text-sm leading-relaxed text-amber-800">{tender.instructions}</p>
+                    <p className="text-sm leading-relaxed text-amber-800 dark:text-amber-200">{tender.instructions}</p>
                   </div>
                 </div>
               </FadeUp>
@@ -195,9 +193,9 @@ const PublicTenderDetail = () => {
 
             {/* Summary card */}
             <FadeUp>
-              <div className="rounded-xl overflow-hidden" style={{ background: 'linear-gradient(135deg, oklch(0.145 0 0), oklch(0.2 0.03 296.9))' }}>
+              <div className="rounded-xl overflow-hidden bg-card border border-border shadow-sm">
                 <div className="px-6 py-5">
-                  <p className="text-[10px] font-bold uppercase tracking-wider mb-4 text-violet-300/60">
+                  <p className="text-[10px] font-bold uppercase tracking-wider mb-4 text-primary/70">
                     Tender Summary
                   </p>
                   <div className="space-y-4">
@@ -208,12 +206,12 @@ const PublicTenderDetail = () => {
                       { icon: Calendar, label: 'Published', val: tender.created_at ? new Date(tender.created_at).toLocaleDateString() : '—' },
                     ].map(({ icon: Icon, label, val }) => (
                       <div key={label} className="flex items-start gap-3">
-                        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-violet-400/15">
-                          <Icon size={13} className="text-violet-300" />
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-primary/10">
+                          <Icon size={13} className="text-primary" />
                         </div>
                         <div>
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-violet-300/50">{label}</p>
-                          <p className="text-xs font-semibold mt-0.5 text-white/75">{val}</p>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</p>
+                          <p className="text-xs font-semibold mt-0.5 text-foreground">{val}</p>
                         </div>
                       </div>
                     ))}

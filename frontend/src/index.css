@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --font-serif: "IBM Plex Serif", ui-serif, Georgia, serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -68,18 +70,18 @@
   --warning-foreground: oklch(0.145 0 0);
   --border: oklch(0.92 0.004 286);
   --input: oklch(0.92 0.004 286);
-  --ring: oklch(0.556 0.246 296.9);
+  --ring: oklch(16.447% 0.01283 300.193 / 40%);
   --radius: 0.65rem;
 
   --sidebar: oklch(0.99 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.556 0.246 296.9);
+  --sidebar-primary: oklch(16.447% 0.01283 300.193);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.967 0.001 286);
   --sidebar-accent-foreground: oklch(0.21 0.006 286);
   --sidebar-border: oklch(0.92 0.004 286);
 
-  --chart-1: oklch(0.556 0.246 296.9);
+  --chart-1: oklch(16.447% 0.01283 300.193);
   --chart-2: oklch(0.627 0.17 149);
   --chart-3: oklch(0.681 0.162 76);
   --chart-4: oklch(0.6 0.19 25);
@@ -93,7 +95,7 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.185 0.004 286);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.68 0.19 296.9);
+  --primary: oklch(0.985 0 0);
   --primary-foreground: oklch(0.145 0 0);
   --secondary: oklch(0.26 0.006 286);
   --secondary-foreground: oklch(0.985 0 0);
@@ -109,17 +111,17 @@
   --warning-foreground: oklch(0.145 0 0);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.68 0.19 296.9);
+  --ring: oklch(0.985 0 0 / 40%);
 
   --sidebar: oklch(0.145 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.68 0.19 296.9);
+  --sidebar-primary: oklch(0.985 0 0);
   --sidebar-primary-foreground: oklch(0.145 0 0);
   --sidebar-accent: oklch(0.26 0.006 286);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
 
-  --chart-1: oklch(0.68 0.19 296.9);
+  --chart-1: oklch(0.985 0 0);
   --chart-2: oklch(0.7 0.17 149);
   --chart-3: oklch(0.75 0.16 76);
   --chart-4: oklch(0.65 0.2 25);

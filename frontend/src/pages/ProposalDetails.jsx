@@ -69,19 +69,19 @@ const SupplierCard = ({ profile }) => {
       transition={{ duration: 0.35, delay: 0.05 }}
       className="rounded-xl overflow-hidden border border-primary/15 shadow-sm"
     >
-      <div className="flex items-center gap-4 px-5 py-4 border-b border-primary/15" style={{ background: 'linear-gradient(135deg, oklch(0.145 0 0), oklch(0.2 0.03 296.9))' }}>
+      <div className="flex items-center gap-4 px-5 py-4 bg-muted/40 border-b border-border">
         <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 font-extrabold text-base bg-primary text-primary-foreground tracking-wide">
           {initials}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-white font-bold text-sm truncate">{profile.name}</p>
-          <p className="text-[11px] mt-0.5 truncate text-violet-300/70">{profile.email}</p>
+          <p className="text-foreground font-bold text-sm truncate">{profile.name}</p>
+          <p className="text-[11px] mt-0.5 truncate text-muted-foreground">{profile.email}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {hasProfile
             ? <Badge className="bg-success/15 text-emerald-400 border-success/20"><BadgeCheck size={10} /> Profile Complete</Badge>
             : <Badge className="bg-warning/15 text-amber-400 border-warning/20"><BadgeAlert size={10} /> No Company Profile</Badge>}
-          <Badge className="bg-primary/20 text-primary-foreground/90 border-primary/25">Supplier</Badge>
+          <Badge className="bg-primary/10 text-primary border-primary/25">Supplier</Badge>
         </div>
       </div>
 

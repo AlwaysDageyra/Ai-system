@@ -19,9 +19,9 @@ export function LogoMark({ className, size = 32 }) {
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <rect x="3" y="14" width="4.5" height="7" rx="1" fill="white" />
-        <rect x="9.75" y="9" width="4.5" height="12" rx="1" fill="white" />
-        <rect x="16.5" y="3" width="4.5" height="18" rx="1" fill="white" />
+        <rect x="3" y="14" width="4.5" height="7" rx="1" className="fill-primary-foreground" />
+        <rect x="9.75" y="9" width="4.5" height="12" rx="1" className="fill-primary-foreground" />
+        <rect x="16.5" y="3" width="4.5" height="18" rx="1" className="fill-primary-foreground" />
       </svg>
     </div>
   );

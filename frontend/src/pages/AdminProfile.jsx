@@ -170,15 +170,15 @@ const AdminProfile = () => {
       {/* ── VIEW MODE ── */}
       {!editing && (
         <div className="rounded-xl overflow-hidden bg-card border border-border shadow-sm">
-          <div className="px-6 py-5" style={{ background: 'linear-gradient(135deg, oklch(0.145 0 0), oklch(0.2 0.03 296.9))' }}>
+          <div className="px-6 py-5 bg-muted/40 border-b border-border">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 bg-violet-400/20 border border-violet-400/30">
-                <Building2 size={24} className="text-violet-300" />
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 bg-primary/10 border border-primary/20">
+                <Building2 size={24} className="text-primary" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-white">{profile?.company_name || 'Your Organisation'}</h2>
+                <h2 className="text-lg font-bold text-foreground">{profile?.company_name || 'Your Organisation'}</h2>
                 {profile?.company_type && (
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-lg mt-1 inline-block bg-violet-400/20 text-primary-foreground/90">
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-lg mt-1 inline-block bg-primary/10 text-primary">
                     {profile.company_type}
                   </span>
                 )}

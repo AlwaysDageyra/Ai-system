@@ -63,7 +63,7 @@ uploads/
 
 # ML model weights (too large for git — share separately)
 /models/
-
+../migrations
 # Claude Code session files
 .claude/
 

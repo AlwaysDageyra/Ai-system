@@ -235,12 +235,12 @@ const SuperAdminDashboard = () => {
 
       {/* Quick actions footer */}
       <FadeUp delay={0.32}>
-        <div className="rounded-xl p-5 border border-primary/15" style={{ background: 'linear-gradient(135deg, oklch(0.145 0 0), oklch(0.2 0.03 296.9))' }}>
+        <div className="rounded-xl p-5 bg-card border border-primary/15 shadow-sm">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-primary">
               <Zap size={12} className="text-primary-foreground" fill="currentColor" />
             </div>
-            <p className="text-sm font-bold text-white">Quick Actions</p>
+            <p className="text-sm font-bold text-foreground">Quick Actions</p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
@@ -250,7 +250,7 @@ const SuperAdminDashboard = () => {
               { label: 'Add New Admin', to: '/super-admin/users', Icon: ShieldCheck },
             ].map(({ label, to, Icon }) => (
               <Link key={label} to={to}
-                className="flex items-center gap-2 p-3 rounded-lg text-xs font-semibold no-underline bg-white/5 text-white/60 border border-white/10 transition-colors hover:bg-violet-400/20 hover:text-violet-300 hover:border-violet-400/30">
+                className="flex items-center gap-2 p-3 rounded-lg text-xs font-semibold no-underline bg-muted/50 text-muted-foreground border border-border transition-colors hover:bg-primary/10 hover:text-primary hover:border-primary/20">
                 <Icon size={13} /> {label}
               </Link>
             ))}

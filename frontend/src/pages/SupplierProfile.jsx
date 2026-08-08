@@ -182,15 +182,15 @@ const SupplierProfile = () => {
           {/* ── VIEW MODE ── */}
           {!editing && (
             <div className="rounded-xl overflow-hidden bg-card border border-border shadow-sm">
-              <div className="px-6 py-5" style={{ background: 'linear-gradient(135deg, oklch(0.145 0 0), oklch(0.2 0.03 296.9))' }}>
+              <div className="px-6 py-5 bg-muted/40 border-b border-border">
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 bg-violet-400/20 border border-violet-400/30">
-                    <Building2 size={24} className="text-violet-300" />
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 bg-primary/10 border border-primary/20">
+                    <Building2 size={24} className="text-primary" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-bold text-white">{profile?.company_name || 'Your Company'}</h2>
+                    <h2 className="text-lg font-bold text-foreground">{profile?.company_name || 'Your Company'}</h2>
                     {profile?.company_type && (
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-lg mt-1 inline-block bg-violet-400/20 text-primary-foreground/90">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-lg mt-1 inline-block bg-primary/10 text-primary">
                         {profile.company_type}
                       </span>
                     )}
@@ -379,13 +379,13 @@ const SupplierProfile = () => {
 
         {/* Right: activity */}
         <div className="space-y-4">
-          <div className="rounded-xl p-5 border border-primary/20" style={{ background: 'linear-gradient(135deg, oklch(0.145 0 0), oklch(0.2 0.03 296.9))' }}>
-            <p className="text-[10px] font-bold text-violet-300/60 uppercase tracking-[0.12em] mb-4">My Activity</p>
+          <div className="rounded-xl p-5 bg-card border border-primary/20 shadow-sm">
+            <p className="text-[10px] font-bold text-primary/70 uppercase tracking-[0.12em] mb-4">My Activity</p>
             <div>
-              <p className="text-3xl font-extrabold text-white">{proposals.length}</p>
-              <p className="text-xs mt-0.5 text-white/35">Total Proposals Submitted</p>
+              <p className="text-3xl font-extrabold text-foreground">{proposals.length}</p>
+              <p className="text-xs mt-0.5 text-muted-foreground">Total Proposals Submitted</p>
             </div>
-            <div className="grid grid-cols-3 gap-2 pt-4 mt-4 border-t border-white/10">
+            <div className="grid grid-cols-3 gap-2 pt-4 mt-4 border-t border-border">
               {[
                 { label: 'Review', count: proposals.filter(p => p.status === 'under_review').length, tone: 'text-warning' },
                 { label: 'Approved', count: proposals.filter(p => p.status === 'approved').length, tone: 'text-success' },
@@ -393,7 +393,7 @@ const SupplierProfile = () => {
               ].map(({ label, count, tone }) => (
                 <div key={label} className="text-center">
                   <p className={cn('text-xl font-bold', tone)}>{count}</p>
-                  <p className="text-[9px] mt-0.5 text-white/30">{label}</p>
+                  <p className="text-[9px] mt-0.5 text-muted-foreground">{label}</p>
                 </div>
               ))}
             </div>

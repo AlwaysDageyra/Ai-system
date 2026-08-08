@@ -438,12 +438,11 @@ const Dashboard = () => {
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.4 }}
-              className="rounded-xl p-5 border border-primary/20"
-              style={{ background: 'linear-gradient(135deg, oklch(0.145 0 0), oklch(0.2 0.03 296.9))' }}
+              className="rounded-xl p-5 bg-card border border-primary/20 shadow-sm"
             >
               <div className="flex items-center gap-2 mb-4">
-                <Zap size={13} className="text-violet-300" />
-                <h3 className="text-sm font-bold text-white">Proposal Overview</h3>
+                <Zap size={13} className="text-primary" />
+                <h3 className="text-sm font-bold text-foreground">Proposal Overview</h3>
               </div>
               {[
                 { label: 'Total Received', val: totalProposals, pct: 100, chart: 'var(--chart-1)' },
@@ -453,10 +452,10 @@ const Dashboard = () => {
               ].map((row, i) => (
                 <div key={row.label} className="mb-3 last:mb-0">
                   <div className="flex justify-between mb-1">
-                    <span className="text-[11px] font-medium text-white/55">{row.label}</span>
-                    <span className="text-[11px] font-bold text-white">{row.val}</span>
+                    <span className="text-[11px] font-medium text-muted-foreground">{row.label}</span>
+                    <span className="text-[11px] font-bold text-foreground">{row.val}</span>
                   </div>
-                  <div className="h-1.5 rounded-full bg-white/10">
+                  <div className="h-1.5 rounded-full bg-muted">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${row.pct}%` }}

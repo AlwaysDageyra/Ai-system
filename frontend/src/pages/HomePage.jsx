@@ -387,26 +387,26 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* ── CTA BANNER — solid, not a gradient ── */}
-      <section className="py-24 px-4 bg-foreground">
+      {/* ── CTA BANNER ── */}
+      <section className="py-24 px-4 bg-muted/40 border-b border-border">
         <div className="max-w-3xl mx-auto text-center">
           <FadeUp>
-            <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-medium text-background/50 tracking-[0.08em] mb-6">
+            <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-medium text-muted-foreground tracking-[0.08em] mb-6">
               <BadgeCheck size={13} className="text-amber-500" /> CERTIFIED FAIR EVALUATION
             </span>
-            <h2 className="font-serif text-3xl sm:text-4xl mb-5 text-background" style={{ letterSpacing: '-0.01em', textWrap: 'balance' }}>
+            <h2 className="font-serif text-3xl sm:text-4xl mb-5 text-foreground" style={{ letterSpacing: '-0.01em', textWrap: 'balance' }}>
               Ready to grow your business with government contracts?
             </h2>
-            <p className="text-base mb-8 text-background/60">
+            <p className="text-base mb-8 text-muted-foreground">
               Register once. Submit to any open tender. Compete fairly on merit.
             </p>
             <div className="flex flex-wrap gap-3 justify-center">
-              <Button size="lg" className="bg-background text-foreground hover:bg-background/90" asChild>
+              <Button size="lg" asChild>
                 <Link to={token ? '/dashboard' : '/login'} className="no-underline">
                   {token ? 'Open Dashboard' : 'Create Free Account'} <ArrowRight size={15} />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="bg-transparent border-background/20 text-background hover:bg-background/10 hover:text-background" asChild>
+              <Button size="lg" variant="outline" asChild>
                 <Link to="/contact" className="no-underline">
                   Contact Us <ChevronRight size={15} />
                 </Link>
